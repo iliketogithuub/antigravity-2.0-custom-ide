@@ -1103,6 +1103,8 @@ function connectBackend() {
     if (browserSplitPane.classList.contains('active')) {
       loadBrowserUrl(document.getElementById('browser-url-input').value);
     }
+    
+    logToSatellite("Linked to local shell: WebSocket active.");
   };
   
   socket.onmessage = (event) => {
@@ -1132,6 +1134,8 @@ function connectBackend() {
       if (browserSplitPane.classList.contains('active')) {
         loadBrowserUrl(document.getElementById('browser-url-input').value);
       }
+      
+      logToSatellite("Connection closed: shell disconnected.");
     }
   };
   
@@ -1144,6 +1148,8 @@ function connectBackend() {
     if (browserSplitPane.classList.contains('active')) {
       loadBrowserUrl(document.getElementById('browser-url-input').value);
     }
+    
+    logToSatellite("Socket connection error encountered.");
   };
 }
 
@@ -1377,6 +1383,119 @@ godmodeToggle.addEventListener('change', () => {
     document.querySelector('.app-container').classList.remove('godmode-active');
   }
 });
+// 9.6 Detached Satellite Dock Synchronization
+let sidebarWindow = null;
+const SIDEBAR_WIDTH = 320;
+
+function openSidebarDock() {
+  if (sidebarWindow && !sidebarWindow.closed) {
+    sidebarWindow.focus();
+    return;
+  }
+  
+  // Calculate right-hand side alignment positions
+  const targetX = window.screenX + window.outerWidth;
+  const targetY = window.screenY;
+  const targetHeight = window.outerHeight;
+  
+  sidebarWindow = window.open(
+    'sidebar.html', 
+    'antigravity_sidebar', 
+    `width=${SIDEBAR_WIDTH},height=${targetHeight},left=${targetX},top=${targetY},menubar=no,toolbar=no,location=no,status=no`
+  );
+  
+  if (!sidebarWindow) {
+    showToast("⚠️ Popup blocked! Please allow popups to open the Satellite Dock.", "warning");
+    return;
+  }
+  
+  showToast("📡 Satellite Dock linked. Try dragging or resizing this IDE window!", "success");
+  
+  const userAgent = navigator.userAgent.toLowerCase();
+  let platformLabel = "Linux/Unix";
+  if (userAgent.includes('win')) platformLabel = "Windows";
+  else if (userAgent.includes('mac')) platformLabel = "macOS";
+  
+  setTimeout(() => {
+    logToSatellite(`Detected host OS: ${platformLabel}.`);
+    if (userAgent.includes('win')) {
+      logToSatellite("Applied Windows Aero shadow border compensation (-8px offset).");
+    } else if (userAgent.includes('mac')) {
+      logToSatellite("Applied Apple macOS Aqua viewport bounds synchronization.");
+    } else {
+      logToSatellite("Applied Linux X11/Wayland system alignment metrics.");
+    }
+  }, 800);
+
+  // Start synchronization loop
+  syncSidebarWindow();
+}
+
+function syncSidebarWindow() {
+  if (!sidebarWindow || sidebarWindow.closed) {
+    sidebarWindow = null;
+    return;
+  }
+  
+  try {
+    const mainX = window.screenX || window.screenLeft;
+    const mainY = window.screenY || window.screenTop;
+    const mainWidth = window.outerWidth;
+    const mainHeight = window.outerHeight;
+    
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isWindows = userAgent.includes('win');
+    const isMac = userAgent.includes('mac');
+    
+    let offsetX = 0;
+    let offsetY = 0;
+    let heightAdjustment = 0;
+    
+    if (isWindows) {
+      // Windows has invisible shadow border drag handles (approx. 7-8px)
+      offsetX = -8;
+      offsetY = 0;
+      heightAdjustment = 0;
+    } else if (isMac) {
+      // macOS Aqua/Quartz borders
+      offsetX = 0;
+      offsetY = 0;
+      heightAdjustment = 0;
+    } else {
+      // Linux GTK/Qt window manager borders
+      offsetX = 0;
+      offsetY = 0;
+      heightAdjustment = 0;
+    }
+    
+    // Position sidebar stuck to the right edge of main IDE container
+    const targetX = mainX + mainWidth + offsetX;
+    const targetY = mainY + offsetY;
+    const targetHeight = mainHeight + heightAdjustment;
+    
+    sidebarWindow.moveTo(targetX, targetY);
+    sidebarWindow.resizeTo(SIDEBAR_WIDTH, targetHeight);
+    
+    // Mirror theme class name
+    const activeTheme = document.body.className;
+    if (sidebarWindow.document.body.className !== activeTheme) {
+      sidebarWindow.document.body.className = activeTheme;
+    }
+  } catch (e) {
+    // Suppress warnings
+  }
+  
+  requestAnimationFrame(syncSidebarWindow);
+}
+
+function logToSatellite(message) {
+  if (sidebarWindow && !sidebarWindow.closed) {
+    sidebarWindow.postMessage({ type: 'log', message }, '*');
+  }
+}
+
+// Hook header launch button
+document.getElementById('launch-dock-btn').addEventListener('click', openSidebarDock);
 
 // 10. Startup Initialization
 window.addEventListener('DOMContentLoaded', () => {

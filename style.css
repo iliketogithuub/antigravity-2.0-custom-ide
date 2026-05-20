@@ -200,6 +200,12 @@ body::after {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .window-controls {
   display: flex;
   gap: 8px;
