@@ -40,30 +40,68 @@ All of this is compiled into a lightweight, high-performance static workspace th
 
 ## 🚀 Quick Start
 
-### 1. Start the Connected Backend Server
-The IDE includes a local Node.js server that handles the WebSocket shell execution and browser proxy requests.
+To unlock the full power of the Antigravity 2.0 connected backend (terminal access, split browser proxy, and God Mode writes), you need to spin up the local Node.js server. Choose the setup guide matching your operating system below:
 
-```bash
-# 1. Install dependencies
-npm install
+###  macOS (Apple) Setup
+1. **Prerequisites**: Ensure you have Node.js and Git installed (we recommend using [Homebrew](https://brew.sh/): `brew install node git`).
+2. **Clone & Install**:
+   ```bash
+   git clone https://github.com/iliketogithuub/antigravity-2.0-custom-ide.git
+   cd antigravity-2.0-custom-ide
+   npm install
+   ```
+3. **Launch Backend**:
+   ```bash
+   npm start
+   ```
+4. **Serve Frontend**:
+   ```bash
+   python3 -m http.server 8080
+   ```
+   Open [http://localhost:8080](http://localhost:8080) and click **"Launch Satellite Panel"** in the header. Allow browser popup permissions when prompted. The Apple Aqua viewport coordinates will align instantly.
 
-# 2. Start the local backend server
-npm start
-```
-This runs the local backend server strictly on `http://127.0.0.1:8081` (secured for local-only traffic).
+### 🪟 Windows Setup
+1. **Prerequisites**: Download and install [Node.js](https://nodejs.org/) and Git.
+2. **Clone & Install**:
+   Open **PowerShell** or **Command Prompt** and run:
+   ```cmd
+   git clone https://github.com/iliketogithuub/antigravity-2.0-custom-ide.git
+   cd antigravity-2.0-custom-ide
+   npm install
+   ```
+3. **Launch Backend**:
+   ```cmd
+   npm start
+   ```
+4. **Serve Frontend**:
+   ```cmd
+   # Using Node.js live-server
+   npx live-server --port=8080
+   ```
+   Open [http://localhost:8080](http://localhost:8080). Windows Aero resize handle shadow offsets (`-8px`) are automatically compensated for a seamless edge alignment.
 
-### 2. Open the IDE in Your Browser
-Since the frontend is built on lightweight, performant **Vanilla JS & CSS**, you can run it without heavy compilation. Simply open `index.html` in your browser, or spin up a local server:
-
-```bash
-# Using Python
-python3 -m http.server 8080
-
-# Using Node.js
-npx live-server --port=8080
-```
-Open your browser to `http://localhost:8080` to experience the connected interface. 
-*The status indicator will automatically switch to **"Connected (Live Shell)"** as soon as it detects the running backend!*
+### 🐧 Linux Setup
+1. **Prerequisites**: Ensure Node.js and Git are installed via your package manager:
+   ```bash
+   sudo apt update && sudo apt install -y nodejs npm git # Debian/Ubuntu
+   # or
+   sudo dnf install -y nodejs git                       # Fedora
+   ```
+2. **Clone & Install**:
+   ```bash
+   git clone https://github.com/iliketogithuub/antigravity-2.0-custom-ide.git
+   cd antigravity-2.0-custom-ide
+   npm install
+   ```
+3. **Launch Backend**:
+   ```bash
+   npm start
+   ```
+4. **Serve Frontend**:
+   ```bash
+   python3 -m http.server 8080
+   ```
+   Open [http://localhost:8080](http://localhost:8080) in your browser. Standard Wayland/X11 alignment rules will automatically align the Satellite Panel.
 
 ---
 
