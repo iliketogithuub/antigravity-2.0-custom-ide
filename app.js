@@ -679,11 +679,11 @@ document.querySelectorAll('.chat-template-btn').forEach(btn => {
     setTimeout(() => {
       hideTypingIndicator();
       let reply = "";
+      const isGodMode = document.getElementById('setting-godmode').checked;
       
       if (promptText.includes("Optimize")) {
-        // Run code optimizer mock
         if (activeFile === 'physics-engine.js') {
-          files['physics-engine.js'].content = `/**
+          const optimizedCode = `/**
  * Antigravity calculation matrix
  * Defies standard relativity constraints
  * OPTIMIZED: Memoized computation vector cache
@@ -711,10 +711,20 @@ exports.calculateLift = function(mass) {
   computationCache.set(mass, result);
   return result;
 };`;
+          files['physics-engine.js'].content = optimizedCode;
           if (editor && activeFile === 'physics-engine.js') {
-            editor.setValue(files['physics-engine.js'].content);
+            editor.setValue(optimizedCode);
           }
-          reply = "🚀 I have optimized **physics-engine.js**:\n- Implemented a standard memory cache Map to store computations.\n- Replaced raw runtime random math variables with static equilibrium coefficient to reduce variance jitters.\n- Cleaned comments for faster JS compiling. The file will load **35% faster** now!";
+          
+          if (isGodMode && isBackendConnected) {
+            socket.send(JSON.stringify({
+              type: 'input',
+              data: `cat << 'EOF' > physics-engine.js\n${optimizedCode}\nEOF\n`
+            }));
+            reply = "🚀 **GOD MODE ACTIVE**: Optimized code injected directly to your local workspace path: `physics-engine.js`! Shell compilation executed successfully.";
+          } else {
+            reply = "🚀 I have optimized **physics-engine.js** in memory:\n- Implemented a standard memory cache Map to store computations.\n- Replaced raw runtime random math variables with static equilibrium coefficient to reduce variance jitters.\n- Cleaned comments for faster JS compiling. The file will load **35% faster** now!";
+          }
         } else {
           reply = `I can help optimize **${activeFile}**. Try switching to \`physics-engine.js\` for a demonstration of my automatic source optimization module.`;
         }
@@ -723,14 +733,7 @@ exports.calculateLift = function(mass) {
         reply = `🔍 Checked **${activeFile}**:\n- **No critical vulnerabilities found**.\n- *Recommendation*: Ensure you validate that division parameters do not reach 0 when calculations are pushed near high gravity boundaries.`;
       } 
       else if (promptText.includes("Test")) {
-        // Create tests file
-        files['physics.test.js'] = {
-          name: 'physics.test.js',
-          path: 'physics.test.js',
-          type: 'file',
-          icon: 'file-check-2',
-          language: 'javascript',
-          content: `// Antigravity Quantum Vector Test Suite
+        const testCode = `// Antigravity Quantum Vector Test Suite
 const physics = require('./physics-engine');
 
 describe('Antigravity Physics Engine Spec', () => {
@@ -740,10 +743,28 @@ describe('Antigravity Physics Engine Spec', () => {
     expect(parseFloat(lift.netForce)).toBeGreaterThanOrEqual(980);
     expect(lift.equilibriumReached).toBe(true);
   });
-});`
+});`;
+        
+        files['physics.test.js'] = {
+          name: 'physics.test.js',
+          path: 'physics.test.js',
+          type: 'file',
+          icon: 'file-check-2',
+          language: 'javascript',
+          content: testCode
         };
+        
         switchToFile('physics.test.js');
-        reply = "✅ Generated unit test suite inside new file **physics.test.js**! Click to check out the structure. You can run `npm run test` in terminal to check validity.";
+        
+        if (isGodMode && isBackendConnected) {
+          socket.send(JSON.stringify({
+            type: 'input',
+            data: `cat << 'EOF' > physics.test.js\n${testCode}\nEOF\n`
+          }));
+          reply = "✅ **GOD MODE ACTIVE**: Generated real unit test suite inside **physics.test.js** directly on your local computer via WebSocket command pipeline!";
+        } else {
+          reply = "✅ Generated unit test suite inside new file **physics.test.js** in memory! Click to check out the structure. You can run `npm run test` in terminal to check validity.";
+        }
       } 
       else if (promptText.includes("Viral")) {
         reply = "📢 Generate viral engagement for **Antigravity 2.0 IDE**! I have compiled social links and headlines inside the **Launch Center**. Click the rocket icon in the sidebar to open the Viral Boost toolkit.";
@@ -1213,6 +1234,22 @@ function handleBrowserProxyCommand(url) {
     });
 }
 
+// God Mode Toggle Event Handling
+const godmodeToggle = document.getElementById('setting-godmode');
+godmodeToggle.addEventListener('change', () => {
+  const active = godmodeToggle.checked;
+  localStorage.setItem('antigravity_godmode', active);
+  if (active) {
+    showToast("⚡ GOD MODE ENABLED: AI auto-allow write actions authorized!", "info");
+    appendTerminalRaw("\n⚡ [GOD MODE] Elevating access parameters... Auto-allow active.\n");
+    document.querySelector('.app-container').classList.add('godmode-active');
+  } else {
+    showToast("God Mode disabled.", "info");
+    appendTerminalRaw("\n[GOD MODE] Restoring standard sandbox restrictions.\n");
+    document.querySelector('.app-container').classList.remove('godmode-active');
+  }
+});
+
 // 10. Startup Initialization
 window.addEventListener('DOMContentLoaded', () => {
   initMonaco();
@@ -1221,6 +1258,13 @@ window.addEventListener('DOMContentLoaded', () => {
   renderTabs();
   printInitialTerminal();
   updateGitPanel();
+  
+  // Restore God Mode state
+  const savedGodmode = localStorage.getItem('antigravity_godmode') === 'true';
+  godmodeToggle.checked = savedGodmode;
+  if (savedGodmode) {
+    document.querySelector('.app-container').classList.add('godmode-active');
+  }
   
   // Trigger initial icons build
   lucide.createIcons();
