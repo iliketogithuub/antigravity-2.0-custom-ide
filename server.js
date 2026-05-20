@@ -39,12 +39,32 @@ const server = http.createServer(async (req, res) => {
 
     try {
       console.log(`[Proxy] Fetching: ${targetUrl}`);
-      const response = await fetch(targetUrl);
+      const response = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+      });
       const contentType = response.headers.get('content-type') || 'text/html';
-      const text = await response.text();
-
-      res.writeHead(response.status, { 'Content-Type': contentType });
-      res.end(text);
+      
+      if (contentType.includes('text/html')) {
+        let text = await response.text();
+        const targetBase = new URL(targetUrl);
+        
+        // Rewrite root-relative links/sources (e.g. href="/about" -> href="origin/about")
+        text = text.replace(/(href|src)="\/([^"]*)"/g, (match, attr, path) => {
+          return `${attr}="${targetBase.origin}/${path}"`;
+        });
+        
+        // Rewrite protocol-relative links (e.g. href="//cdn.com" -> href="https://cdn.com")
+        text = text.replace(/(href|src)="\/\/([^"]*)"/g, `$1="https://$2"`);
+        
+        res.writeHead(response.status, { 'Content-Type': contentType });
+        res.end(text);
+      } else {
+        const buffer = await response.arrayBuffer();
+        res.writeHead(response.status, { 'Content-Type': contentType });
+        res.end(Buffer.from(buffer));
+      }
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'text/plain' });
       res.end(`Proxy fetch failed: ${err.message}`);

@@ -1097,6 +1097,12 @@ function connectBackend() {
     // Clear terminal and request bash prompt
     terminalOutput.innerHTML = '';
     socket.send(JSON.stringify({ type: 'input', data: '\n' }));
+    
+    // Refresh live browser if active
+    const browserSplitPane = document.getElementById('browser-split-pane');
+    if (browserSplitPane.classList.contains('active')) {
+      loadBrowserUrl(document.getElementById('browser-url-input').value);
+    }
   };
   
   socket.onmessage = (event) => {
@@ -1120,12 +1126,24 @@ function connectBackend() {
       updateStatusBarConnection(false);
       showToast("Backend connection lost. Switched to simulated mode.", "info");
       printInitialTerminal();
+      
+      // Update browser panel if active to display offline warning
+      const browserSplitPane = document.getElementById('browser-split-pane');
+      if (browserSplitPane.classList.contains('active')) {
+        loadBrowserUrl(document.getElementById('browser-url-input').value);
+      }
     }
   };
   
   socket.onerror = () => {
     isBackendConnected = false;
     updateStatusBarConnection(false);
+    
+    // Update browser panel if active to display offline warning
+    const browserSplitPane = document.getElementById('browser-split-pane');
+    if (browserSplitPane.classList.contains('active')) {
+      loadBrowserUrl(document.getElementById('browser-url-input').value);
+    }
   };
 }
 
@@ -1233,6 +1251,116 @@ function handleBrowserProxyCommand(url) {
       appendTerminalRaw(`[Proxy Browser] Failed: ${err.message}\n`);
     });
 }
+
+// 9.5 Split Live Web Browser Controller
+function loadBrowserUrl(url) {
+  const browserIframe = document.getElementById('browser-iframe');
+  const browserUrlInput = document.getElementById('browser-url-input');
+  
+  if (!url) return;
+  
+  let formattedUrl = url.trim();
+  if (!/^https?:\/\//i.test(formattedUrl)) {
+    formattedUrl = 'https://' + formattedUrl;
+  }
+  browserUrlInput.value = formattedUrl;
+  
+  if (isBackendConnected) {
+    browserIframe.src = `http://127.0.0.1:8081/proxy?url=${encodeURIComponent(formattedUrl)}`;
+  } else {
+    // Render offline message in iframe
+    const fallbackHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap" rel="stylesheet">
+        <style>
+          body {
+            background-color: #0b0816;
+            color: #ffffff;
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 80vh;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+          }
+          .card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(155, 93, 229, 0.25);
+            border-radius: 12px;
+            padding: 28px;
+            max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+          }
+          h2 { color: #f15bb5; font-size: 18px; margin-top: 0; margin-bottom: 12px; }
+          p { color: #c5c9db; font-size: 12.5px; line-height: 1.5; margin-bottom: 16px; }
+          code {
+            background: #000;
+            color: #00f5d4;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h2>🌐 Live Browser Proxy Offline</h2>
+          <p>This panel uses a local CORS-Free bypass proxy to render internet webpages directly inside the IDE split screen.</p>
+          <p>To start browsing the internet, run the backend server on your machine:</p>
+          <p><code>npm start</code></p>
+          <p style="margin-bottom: 0; font-size: 11px; color: #8f94ab;">Once active, the status bar will show "Connected" and pages will load instantly!</p>
+        </div>
+      </body>
+      </html>
+    `;
+    const doc = browserIframe.contentWindow.document;
+    doc.open();
+    doc.write(fallbackHTML);
+    doc.close();
+  }
+}
+
+// Live Browser listeners
+const toggleSplitBrowserBtn = document.getElementById('toggle-split-browser-btn');
+const browserSplitPane = document.getElementById('browser-split-pane');
+const browserUrlInput = document.getElementById('browser-url-input');
+const browserBtnGo = document.getElementById('browser-btn-go');
+const browserBtnRefresh = document.getElementById('browser-btn-refresh');
+
+toggleSplitBrowserBtn.addEventListener('click', () => {
+  const isActive = browserSplitPane.classList.toggle('active');
+  toggleSplitBrowserBtn.classList.toggle('active', isActive);
+  
+  if (isActive) {
+    loadBrowserUrl(browserUrlInput.value);
+  }
+  
+  // Reflow Monaco Editor layout
+  setTimeout(() => {
+    if (editor) editor.layout();
+  }, 150);
+});
+
+browserBtnGo.addEventListener('click', () => {
+  loadBrowserUrl(browserUrlInput.value);
+});
+
+browserUrlInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    loadBrowserUrl(browserUrlInput.value);
+  }
+});
+
+browserBtnRefresh.addEventListener('click', () => {
+  loadBrowserUrl(browserUrlInput.value);
+});
 
 // God Mode Toggle Event Handling
 const godmodeToggle = document.getElementById('setting-godmode');
