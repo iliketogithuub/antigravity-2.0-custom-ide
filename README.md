@@ -40,7 +40,19 @@ All of this is compiled into a lightweight, high-performance static workspace th
 
 ## 🚀 Quick Start
 
-To unlock the full power of the Antigravity 2.0 connected backend (terminal access, split browser proxy, and God Mode writes), you need to spin up the local Node.js server. Choose the setup guide matching your operating system below:
+The IDE is pre-configured with **one-click auto-setup script launchers** for all major platforms. These scripts automatically inspect and download dependencies, spin up the backend terminal socket server, launch the local static files web server, and open your browser!
+
+### ⚡ One-Click Launch (Recommended)
+- **Windows**: Double-click `start.bat` in the root folder.
+- **macOS & Linux**: Open terminal in the root folder and run:
+  ```bash
+  chmod +x start.sh && ./start.sh
+  ```
+
+---
+
+### 🛠️ Manual Step-by-Step Setup
+Choose the setup guide matching your operating system below to configure manually:
 
 ###  macOS (Apple) Setup
 1. **Prerequisites**: Ensure you have Node.js and Git installed (we recommend using [Homebrew](https://brew.sh/): `brew install node git`).

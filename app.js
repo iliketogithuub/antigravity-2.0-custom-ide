@@ -347,6 +347,9 @@ function appendTerminalLine(text, className = '') {
 function printInitialTerminal() {
   appendTerminalLine("Antigravity 2.0 Quantum Compiler CLI");
   appendTerminalLine("Type 'help' to view available operations.");
+  if (localStorage.getItem('antigravity_godmode') !== 'false') {
+    appendTerminalLine("⚡ [SYSTEM STATE]: GOD MODE AUTHORIZED & ACTIVE");
+  }
   appendTerminalLine("--------------------------------------------------");
 }
 
@@ -1506,8 +1509,8 @@ window.addEventListener('DOMContentLoaded', () => {
   printInitialTerminal();
   updateGitPanel();
   
-  // Restore God Mode state
-  const savedGodmode = localStorage.getItem('antigravity_godmode') === 'true';
+  // Restore God Mode state (default to true on first load)
+  const savedGodmode = localStorage.getItem('antigravity_godmode') !== 'false';
   godmodeToggle.checked = savedGodmode;
   if (savedGodmode) {
     document.querySelector('.app-container').classList.add('godmode-active');
