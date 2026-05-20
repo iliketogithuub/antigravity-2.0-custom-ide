@@ -105,6 +105,8 @@ exports.calculateLift = function(mass) {
 let activeFile = 'README.md';
 let editor = null;
 let currentTheme = 'theme-space-dark';
+let socket = null;
+let isBackendConnected = false;
 
 // Git Status Tracker
 let modifiedFiles = new Set(['index.js', 'physics-engine.js']);
@@ -350,13 +352,23 @@ function printInitialTerminal() {
 
 terminalInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
-    const val = terminalInput.value.trim();
+    const val = terminalInput.value;
     terminalInput.value = '';
     
     if (val) {
-      termHistory.push(val);
+      termHistory.push(val.trim());
       termHistoryIndex = termHistory.length;
-      executeCommand(val);
+      
+      if (isBackendConnected) {
+        if (val.trim().toLowerCase().startsWith('browse ')) {
+          const url = val.trim().substring(7).trim();
+          handleBrowserProxyCommand(url);
+        } else {
+          socket.send(JSON.stringify({ type: 'input', data: val + '\n' }));
+        }
+      } else {
+        executeCommand(val.trim());
+      }
     }
   } else if (e.key === 'ArrowUp') {
     if (termHistoryIndex > 0) {
@@ -1052,6 +1064,155 @@ document.addEventListener('mouseup', () => {
   }
 });
 
+// Connected Backend WebSockets & Browser Proxy Logic
+function connectBackend() {
+  socket = new WebSocket('ws://127.0.0.1:8081');
+  
+  socket.onopen = () => {
+    isBackendConnected = true;
+    updateStatusBarConnection(true);
+    showToast("Linked to local PC backend! Shell active.", "success");
+    
+    // Clear terminal and request bash prompt
+    terminalOutput.innerHTML = '';
+    socket.send(JSON.stringify({ type: 'input', data: '\n' }));
+  };
+  
+  socket.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'output') {
+        appendTerminalRaw(msg.data);
+      } else if (msg.type === 'exit') {
+        isBackendConnected = false;
+        updateStatusBarConnection(false);
+        showToast("Local shell session ended.", "info");
+      }
+    } catch (err) {
+      console.error("WS msg error:", err);
+    }
+  };
+  
+  socket.onclose = () => {
+    if (isBackendConnected) {
+      isBackendConnected = false;
+      updateStatusBarConnection(false);
+      showToast("Backend connection lost. Switched to simulated mode.", "info");
+      printInitialTerminal();
+    }
+  };
+  
+  socket.onerror = () => {
+    isBackendConnected = false;
+    updateStatusBarConnection(false);
+  };
+}
+
+function updateStatusBarConnection(connected) {
+  const syncStatus = document.querySelector('.sync-status');
+  const termPrompt = document.querySelector('.terminal-prompt');
+  
+  if (connected) {
+    syncStatus.classList.remove('text-green');
+    syncStatus.classList.add('text-pink');
+    syncStatus.innerHTML = `<i data-lucide="terminal"></i> <span>Connected (Live Shell)</span>`;
+    
+    if (termPrompt) termPrompt.textContent = '';
+  } else {
+    syncStatus.classList.remove('text-pink');
+    syncStatus.classList.add('text-green');
+    syncStatus.innerHTML = `<i data-lucide="cloud-lightning"></i> <span>Vibe Connected</span>`;
+    
+    if (termPrompt) termPrompt.textContent = 'antigravity-ide $';
+  }
+  lucide.createIcons();
+}
+
+function stripAnsi(text) {
+  return text.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+}
+
+function appendTerminalRaw(text) {
+  const clean = stripAnsi(text);
+  const lines = clean.split('\n');
+  
+  lines.forEach((line, index) => {
+    if (index > 0) {
+      const div = document.createElement('div');
+      div.className = 'terminal-line';
+      terminalOutput.appendChild(div);
+    }
+    
+    let activeLine = terminalOutput.lastElementChild;
+    if (!activeLine) {
+      activeLine = document.createElement('div');
+      activeLine.className = 'terminal-line';
+      terminalOutput.appendChild(activeLine);
+    }
+    
+    if (line.includes('\r')) {
+      const parts = line.split('\r');
+      activeLine.textContent = parts[parts.length - 1];
+    } else {
+      activeLine.textContent += line;
+    }
+  });
+  
+  while (terminalOutput.children.length > 250) {
+    terminalOutput.removeChild(terminalOutput.firstChild);
+  }
+  
+  terminalOutput.scrollTop = terminalOutput.scrollHeight;
+}
+
+function handleBrowserProxyCommand(url) {
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    url = 'https://' + url;
+  }
+  
+  appendTerminalRaw(`[Proxy Browser] Connecting to ${url}...\n`);
+  
+  fetch(`http://127.0.0.1:8081/proxy?url=${encodeURIComponent(url)}`)
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+      return res.text();
+    })
+    .then(html => {
+      appendTerminalRaw(`[Proxy Browser] Connected! Extracting page layout...\n`);
+      
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      const title = doc.querySelector('title')?.textContent || 'No Title';
+      appendTerminalRaw(`Title: ${title}\n`);
+      
+      const h1s = Array.from(doc.querySelectorAll('h1, h2, h3')).slice(0, 10);
+      if (h1s.length > 0) {
+        appendTerminalRaw(`\nHeadings found:\n`);
+        h1s.forEach(h => {
+          appendTerminalRaw(`  • [${h.tagName}] ${h.textContent.trim().replace(/\s+/g, ' ')}\n`);
+        });
+      }
+      
+      const links = Array.from(doc.querySelectorAll('a')).slice(0, 10);
+      if (links.length > 0) {
+        appendTerminalRaw(`\nMain links found:\n`);
+        links.forEach(a => {
+          const href = a.getAttribute('href');
+          const text = a.textContent.trim().replace(/\s+/g, ' ');
+          if (href && text) {
+            appendTerminalRaw(`  • ${text} -> ${href}\n`);
+          }
+        });
+      }
+      
+      appendTerminalRaw(`\n[Proxy Browser] Page loading successful!\n`);
+    })
+    .catch(err => {
+      appendTerminalRaw(`[Proxy Browser] Failed: ${err.message}\n`);
+    });
+}
+
 // 10. Startup Initialization
 window.addEventListener('DOMContentLoaded', () => {
   initMonaco();
@@ -1067,5 +1228,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Welcome Toast
   setTimeout(() => {
     showToast("Cosmic Space Dark workspace active. Ready to launch!", "success");
+    // Connect to local machine backend
+    connectBackend();
   }, 1000);
 });

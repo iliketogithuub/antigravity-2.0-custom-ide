@@ -1,0 +1,13 @@
+{
+  "name": "antigravity-2.0-custom-ide",
+  "version": "2.0.0",
+  "description": "Connected web IDE for Antigravity 2.0 cancellation engine",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}
