@@ -31,8 +31,9 @@ All of this is compiled into a lightweight, high-performance static workspace th
 - 🌌 **Glassmorphic Cosmic Design**: Backdrop blurs, smooth neon HSL gradients (violet, pink, cyan), and responsive space themes.
 - ⚡ **Monaco Editor Core**: Integrated with the same layout mechanics powering VS Code. Full autocomplete, code diagnostics, and tab management.
 - 🤖 **Zero-G AI Co-pilot**: Powered by an offline simulated Gemini 3.5 context layer. Instantly optimize calculations, generate unit tests, and resolve boundaries.
+- ⚡ **Interactive God Mode**: Unleash autonomous workspace modifications! When toggled ON, the AI copilot writes files directly to your local computer storage via backend WebSocket integrations.
+- 🌐 **Split Live Browser View**: Open a fully functional web browser right next to your code editor. Powered by a CORS-free backend proxy mapping that dynamically rewrites relative assets to bypass cross-origin restrictions.
 - 💻 **Real Local Terminal Integration**: Connects dynamically to your local PC terminal shell (`bash`) via WebSockets to execute real commands and return console stdout/stderr.
-- 🌐 **CORS-Free Web Browser Proxy**: Allows the IDE frontend to query and parse any external internet website's HTML layout directly, bypassing standard browser cross-origin limits.
 - 🚀 **GitHub Virality Launchpad**: Built-in engagement accelerator! Launch modal tracks stars, visitor ticks, Product Hunt upvotes, and simulates live developer comments.
 
 ---
