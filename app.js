@@ -111,11 +111,7 @@ let isBackendConnected = false;
 // Git Status Tracker
 let modifiedFiles = new Set(['index.js', 'physics-engine.js']);
 
-// GitHub Stars Tracker
-let starCount = 12504;
-let forkCount = 1824;
-let visitorCount = 483;
-let trendingRank = 1;
+
 
 // Terminal History
 let termHistory = [];
@@ -128,19 +124,41 @@ function initMonaco() {
     // Hide loading screen
     document.getElementById('editor-loading').style.display = 'none';
     
+    // Define sleek custom theme
+    monaco.editor.defineTheme('antigravity-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.background': '#00000000', // Inherit the glassmorphic backdrop
+        'editorCursor.foreground': '#00f0ff', // Cyberpunk cyan sleek cursor
+        'editor.lineHighlightBackground': '#ffffff08',
+        'editor.selectionBackground': '#9b5de540',
+        'editorIndentGuide.background': '#ffffff10',
+        'editorIndentGuide.activeBackground': '#00f0ff50'
+      }
+    });
+
     // Create editor instance
     editor = monaco.editor.create(document.getElementById('editor-container'), {
       value: files[activeFile].content,
       language: files[activeFile].language,
-      theme: 'vs-dark',
+      theme: 'antigravity-dark',
       automaticLayout: true,
-      fontFamily: 'JetBrains Mono',
+      fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
       fontSize: parseInt(document.getElementById('setting-font-size').value) || 14,
       minimap: { enabled: true },
       padding: { top: 12 },
+      cursorSmoothCaretAnimation: 'on',
+      cursorBlinking: 'smooth',
+      cursorStyle: 'line',
+      cursorWidth: 3,
+      smoothScrolling: true,
+      fontLigatures: true,
       scrollbar: {
         verticalScrollbarSize: 8,
-        horizontalScrollbarSize: 8
+        horizontalScrollbarSize: 8,
+        useShadows: false
       }
     });
 
@@ -236,11 +254,27 @@ function switchToFile(fileName) {
     editor.setModel(model);
     
     // Save edit changes back
+    let saveTimeout;
     editor.onDidChangeModelContent(() => {
       files[activeFile].content = editor.getValue();
       if (!modifiedFiles.has(activeFile)) {
         modifiedFiles.add(activeFile);
         updateGitPanel();
+      }
+      
+      // Auto-save to local disk if a native file handle exists
+      const currentFile = files[activeFile];
+      if (currentFile && currentFile.fileHandle) {
+         clearTimeout(saveTimeout);
+         saveTimeout = setTimeout(async () => {
+           try {
+             const writable = await currentFile.fileHandle.createWritable();
+             await writable.write(currentFile.content);
+             await writable.close();
+           } catch (e) {
+             console.error('Auto-save to disk failed', e);
+           }
+         }, 1000); // 1s debounce to avoid thrashing
       }
     });
   }
@@ -295,41 +329,120 @@ function deleteFile(fileName) {
   showToast(`Deleted ${fileName} from workspace.`, 'info');
 }
 
-// Create New File Dialog
-document.getElementById('new-file-btn').addEventListener('click', () => {
-  const fileName = prompt("Enter new file name (e.g. engine.js):");
-  if (!fileName) return;
-  
-  if (files[fileName]) {
-    showToast("File already exists!", "info");
-    return;
+// Create New File Dialog via Native OS Picker
+document.getElementById('new-file-btn').addEventListener('click', async () => {
+  try {
+    const fileHandle = await window.showSaveFilePicker({
+      suggestedName: 'untitled.js',
+      types: [{
+        description: 'Text Files',
+        accept: {'text/plain': ['.js', '.html', '.css', '.md', '.json', '.txt', '.ts']}
+      }]
+    });
+    
+    // Create an empty file on disk
+    const writable = await fileHandle.createWritable();
+    await writable.write(`// New file: ${fileHandle.name}\n`);
+    await writable.close();
+    
+    // Add to IDE virtual filesystem
+    const fileName = fileHandle.name;
+    let ext = fileName.split('.').pop().toLowerCase();
+    let lang = 'javascript';
+    let icon = 'file-code-2';
+
+    if (ext === 'md') { lang = 'markdown'; icon = 'file-text'; }
+    else if (ext === 'json') { lang = 'json'; icon = 'braces'; }
+    else if (ext === 'css') { lang = 'css'; icon = 'file-type-2'; }
+    else if (ext === 'html') { lang = 'html'; icon = 'file-code'; }
+    else if (ext === 'ts') { lang = 'typescript'; icon = 'file-code-2'; }
+
+    files[fileName] = {
+      name: fileName,
+      path: fileName,
+      type: 'file',
+      icon: icon,
+      language: lang,
+      content: `// New file: ${fileName}\n`,
+      fileHandle: fileHandle
+    };
+
+    modifiedFiles.add(fileName);
+    switchToFile(fileName);
+    updateGitPanel();
+    showToast(`Saved ${fileName} to disk.`, 'success');
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      console.error(err);
+      showToast("Failed to create native file", "error");
+    }
   }
-
-  let ext = fileName.split('.').pop();
-  let lang = 'javascript';
-  let icon = 'file-code-2';
-
-  if (ext === 'md') { lang = 'markdown'; icon = 'file-text'; }
-  else if (ext === 'json') { lang = 'json'; icon = 'braces'; }
-  else if (ext === 'css') { lang = 'css'; icon = 'file-type-2'; }
-
-  files[fileName] = {
-    name: fileName,
-    path: fileName,
-    type: 'file',
-    icon: icon,
-    language: lang,
-    content: `// New file ${fileName}\n`
-  };
-
-  modifiedFiles.add(fileName);
-  switchToFile(fileName);
-  updateGitPanel();
-  showToast(`Created file ${fileName}`, 'success');
 });
 
-document.getElementById('new-folder-btn').addEventListener('click', () => {
-  showToast("Folders will be automatically grouped in simulated file tree.", "info");
+// Open Local Folder / Workspace Mount
+document.getElementById('new-folder-btn').addEventListener('click', async () => {
+  try {
+    const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    
+    // Clear existing mock files
+    for (let key in files) delete files[key];
+    modifiedFiles.clear();
+    
+    // Function to recursively read directory
+    async function readDir(dirHandle, path = '') {
+      for await (const entry of dirHandle.values()) {
+        const entryPath = path ? `${path}/${entry.name}` : entry.name;
+        if (entry.kind === 'file') {
+          try {
+            const file = await entry.getFile();
+            const content = await file.text();
+            let ext = entry.name.split('.').pop().toLowerCase();
+            let lang = 'javascript';
+            let icon = 'file-code-2';
+            
+            if (ext === 'md') { lang = 'markdown'; icon = 'file-text'; }
+            else if (ext === 'json') { lang = 'json'; icon = 'braces'; }
+            else if (ext === 'css') { lang = 'css'; icon = 'file-type-2'; }
+            else if (ext === 'html') { lang = 'html'; icon = 'file-code'; }
+            
+            files[entryPath] = {
+              name: entry.name,
+              path: entryPath,
+              type: 'file',
+              icon: icon,
+              language: lang,
+              content: content,
+              fileHandle: entry
+            };
+          } catch(e) {
+            console.warn("Skipped unreadable file:", entry.name);
+          }
+        } else if (entry.kind === 'directory') {
+          // Ignore heavy vendor directories
+          if (entry.name !== 'node_modules' && entry.name !== '.git') {
+            await readDir(entry, entryPath);
+          }
+        }
+      }
+    }
+    
+    showToast(`Loading workspace from ${dirHandle.name}...`, 'info');
+    await readDir(dirHandle);
+    
+    renderExplorer();
+    const firstFile = Object.keys(files)[0];
+    if (firstFile) switchToFile(firstFile);
+    
+    document.querySelector('.tree-folder span').textContent = dirHandle.name;
+    updateGitPanel();
+    showToast(`Mounted native workspace: ${dirHandle.name}`, 'success');
+    
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      console.error(err);
+      showToast("Failed to mount folder", "error");
+    }
+  }
 });
 
 // 4. Simulated Terminal Controller
@@ -782,11 +895,9 @@ function getAIResponse(userText) {
   userText = userText.toLowerCase();
   
   if (userText.includes("hello") || userText.includes("hi")) {
-    return "Hello developer! I am the Antigravity 2.0 co-pilot. I can compile, generate unit tests, or help you push this project to viral fame on GitHub. Ask me anything about this repository.";
+    return "Hello developer! I am the Antigravity 2.0 co-pilot. I can compile or generate unit tests. Ask me anything about this repository.";
   }
-  if (userText.includes("viral") || userText.includes("github") || userText.includes("stars")) {
-    return "To go viral on GitHub, we need standard features: high-quality clean SVGs, descriptive badges, a solid README.md pitch, and a Product Hunt launch sequence. Open the **Viral Launch Dashboard** using the rocket icon in the left-hand menu to boost stars instantly!";
-  }
+
   if (userText.includes("zero-g") || userText.includes("gravity") || userText.includes("antigravity")) {
     return "Antigravity is achieved by counteracting gravity using an electromagnetic field that balances the acceleration coefficient. In our code, look at `physics-engine.js` where the quantum lift vector is calculated!";
   }
@@ -794,194 +905,7 @@ function getAIResponse(userText) {
   return `I've analyzed your question: "${userText}". As an AI agent loaded inside Antigravity 2.0 workspace, I can optimize code, write files, or trigger compilation. Let me know how you'd like to proceed!`;
 }
 
-// 7. GitHub Viral Launch Modal Controller
-const viralModal = document.getElementById('viral-modal');
-const launchViralBtn = document.getElementById('launch-viral-btn');
-const closeViralModal = document.getElementById('close-viral-modal');
 
-function openViralModal() {
-  viralModal.classList.add('active');
-  updateModalStats();
-  startSimulatedActivity();
-}
-
-function closeModal() {
-  viralModal.classList.remove('active');
-}
-
-launchViralBtn.addEventListener('click', openViralModal);
-closeViralModal.addEventListener('click', closeModal);
-
-// Modal stats sync
-function updateModalStats() {
-  document.getElementById('modal-star-count').textContent = starCount.toLocaleString();
-  document.getElementById('github-star-counter').textContent = `${(starCount / 1000).toFixed(1)}k stars`;
-  
-  document.getElementById('modal-fork-count').textContent = forkCount.toLocaleString();
-  document.getElementById('modal-visitor-count').textContent = visitorCount.toLocaleString();
-  document.getElementById('modal-rank').textContent = `#${trendingRank} Global`;
-}
-
-// Booster Buttons
-document.getElementById('boost-stars-btn').addEventListener('click', () => {
-  starCount += 100;
-  forkCount += Math.floor(Math.random() * 15) + 5;
-  visitorCount += Math.floor(Math.random() * 50) + 20;
-  updateModalStats();
-  triggerStarConfetti();
-  addFeedEvent("star");
-  showToast("GitHub Star Booster deployed! Added 100 organic stars.", "success");
-});
-
-document.getElementById('boost-ph-btn').addEventListener('click', () => {
-  starCount += 250;
-  forkCount += 45;
-  visitorCount += 150;
-  updateModalStats();
-  
-  confetti({
-    particleCount: 100,
-    spread: 70,
-    origin: { y: 0.6 }
-  });
-  
-  addFeedEvent("producthunt");
-  showToast("Product Hunt Launch sequence deployed! Rank rising.", "success");
-});
-
-document.getElementById('trending-hijack-btn').addEventListener('click', () => {
-  starCount += 500;
-  trendingRank = 1;
-  updateModalStats();
-  
-  // Burst confetti
-  let duration = 2 * 1000;
-  let end = Date.now() + duration;
-
-  (function frame() {
-    confetti({
-      particleCount: 5,
-      angle: 60,
-      spread: 55,
-      origin: { x: 0 }
-    });
-    confetti({
-      particleCount: 5,
-      angle: 120,
-      spread: 55,
-      origin: { x: 1 }
-    });
-
-    if (Date.now() < end) {
-      requestAnimationFrame(frame);
-    }
-  }());
-  
-  addFeedEvent("trending");
-  showToast("Hijacked GitHub Trending #1 Spot! Viral growth active.", "success");
-});
-
-function triggerStarConfetti() {
-  confetti({
-    particleCount: 30,
-    angle: 90,
-    spread: 45,
-    origin: { y: 0.8 },
-    colors: ['#fee440', '#9b5de5', '#f15bb5']
-  });
-}
-
-// Copy Action handler
-document.querySelectorAll('.copy-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const targetId = btn.dataset.target;
-    const text = document.getElementById(targetId).textContent;
-    
-    navigator.clipboard.writeText(text).then(() => {
-      showToast("Copied to clipboard!", "success");
-    }).catch(err => {
-      showToast("Failed to copy", "info");
-    });
-  });
-});
-
-// Viral Tab Controller
-const vtabs = document.querySelectorAll('.vtab');
-const vtabContents = document.querySelectorAll('.vtab-content');
-
-vtabs.forEach(tab => {
-  tab.addEventListener('click', () => {
-    vtabs.forEach(t => t.classList.remove('active'));
-    vtabContents.forEach(c => c.classList.remove('active'));
-    
-    tab.classList.add('active');
-    document.getElementById(`vtab-${tab.dataset.vtab}`).classList.add('active');
-  });
-});
-
-// Live Activity Stream
-const activityFeed = document.getElementById('activity-feed');
-const usernames = ['@dan_abramov', '@yyx990803', '@rusty_dev', '@spacex_coder', '@hacker_news_fan', '@ai_pioneer', '@tailwind_guru', '@web_craftsman'];
-const reviews = [
-  'Defying gravity on local compiling speeds. Absolutely loving this.',
-  'Just starred! The glassmorphism and Monaco editor combo works smoothly.',
-  'Finally, a lightweight IDE built for floating physics compilers.',
-  'This is going to blow up on Product Hunt. The UX is sleek.',
-  'Just built my first Zero-G server on this. Impressed by the speed!',
-  'The visual look is incredible. Good job on the theme palette.',
-  'Clean, robust, and feels like VS Code but runs instantly.'
-];
-
-function addFeedEvent(type) {
-  const item = document.createElement('div');
-  item.className = 'feed-item';
-  
-  const user = usernames[Math.floor(Math.random() * usernames.length)];
-  const avatarText = user.substring(1, 3).toUpperCase();
-  
-  let actionText = '';
-  if (type === 'star') {
-    actionText = `starred the repository. <em>"Organic traffic injection boost!"</em>`;
-  } else if (type === 'producthunt') {
-    actionText = `upvoted on Product Hunt. <em>"Congrats on product of the day! Sleek web workspace."</em>`;
-  } else if (type === 'trending') {
-    actionText = `shared on Twitter. <em>"Antigravity 2.0 IDE is the real deal. Defying relativity in JS."</em>`;
-  } else {
-    const msg = reviews[Math.floor(Math.random() * reviews.length)];
-    actionText = `starred the repository. <em>"${msg}"</em>`;
-  }
-  
-  item.innerHTML = `
-    <span class="user-avatar" style="background: hsl(${Math.random() * 360}, 75%, 60%)">${avatarText}</span>
-    <div class="feed-body">
-      <strong>${user}</strong> ${actionText}
-      <span class="feed-time">Just now</span>
-    </div>
-  `;
-  
-  activityFeed.prepend(item);
-  if (activityFeed.children.length > 8) {
-    activityFeed.removeChild(activityFeed.lastChild);
-  }
-}
-
-let activityInterval = null;
-function startSimulatedActivity() {
-  if (activityInterval) clearInterval(activityInterval);
-  
-  // Random additions every 4-8 seconds
-  activityInterval = setInterval(() => {
-    if (document.getElementById('setting-stars-hack').checked) {
-      starCount += Math.floor(Math.random() * 3) + 1;
-      visitorCount += Math.floor(Math.random() * 5) + 1;
-      if (Math.random() > 0.6) {
-        forkCount += 1;
-        addFeedEvent('organic');
-      }
-      updateModalStats();
-    }
-  }, 5000);
-}
 
 // 8. Settings and Theme Modulation
 const themeSelect = document.getElementById('setting-theme');

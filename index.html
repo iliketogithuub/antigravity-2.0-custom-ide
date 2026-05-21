@@ -64,9 +64,6 @@
           </button>
         </div>
         <div class="nav-group bottom">
-          <button class="nav-item" id="launch-viral-btn" title="GitHub Go Viral Dashboard">
-            <i data-lucide="rocket" class="text-pink animate-pulse"></i>
-          </button>
           <button class="nav-item" data-panel="settings" title="Settings">
             <i data-lucide="settings"></i>
           </button>
@@ -80,9 +77,13 @@
           <div class="panel-header">
             <h2>Explorer</h2>
             <div class="panel-actions">
+              <button id="import-folder-btn" title="Import Local Folder"><i data-lucide="folder-down"></i></button>
+              <button id="import-file-btn" title="Import Files"><i data-lucide="file-down"></i></button>
               <button id="new-file-btn" title="New File"><i data-lucide="file-plus"></i></button>
               <button id="new-folder-btn" title="New Folder"><i data-lucide="folder-plus"></i></button>
               <button id="refresh-explorer" title="Refresh"><i data-lucide="refresh-cw"></i></button>
+              <input type="file" id="hidden-folder-input" webkitdirectory directory multiple style="display: none;">
+              <input type="file" id="hidden-file-input" multiple style="display: none;">
             </div>
           </div>
           <div class="explorer-tree" id="explorer-tree">
@@ -279,14 +280,13 @@
           <button class="chat-template-btn" data-prompt="Optimize my index.js for web performance."><i data-lucide="zap"></i> Optimize</button>
           <button class="chat-template-btn" data-prompt="Find any potential bugs or security exploits in styles.css."><i data-lucide="shield-alert"></i> Find Bugs</button>
           <button class="chat-template-btn" data-prompt="Generate a comprehensive suite of unit tests."><i data-lucide="check-square"></i> Test Suite</button>
-          <button class="chat-template-btn" data-prompt="Write a viral tweet pitching this Antigravity 2.0 IDE."><i data-lucide="twitter"></i> Viral Pitch</button>
         </div>
 
         <!-- Chat messages container -->
         <div class="chat-messages" id="chat-messages">
           <div class="message system-msg">
             <div class="message-content">
-              Welcome to the <strong>Antigravity 2.0 IDE</strong>. I am your integrated AI assistant. Ask me to refactor code, generate scripts, or initiate the GitHub viral launch sequence.
+              Welcome to the <strong>Antigravity 2.0 IDE</strong>. I am your integrated AI assistant. Ask me to refactor code or generate scripts.
             </div>
           </div>
         </div>
@@ -329,139 +329,6 @@
     </footer>
   </div>
 
-  <!-- 4. GITHUB GO VIRAL LAUNCH DASHBOARD MODAL -->
-  <div class="modal-overlay" id="viral-modal">
-    <div class="viral-modal-card">
-      <div class="modal-glow"></div>
-      <button class="modal-close-btn" id="close-viral-modal"><i data-lucide="x"></i></button>
-      
-      <div class="viral-header">
-        <div class="viral-icon-container">
-          <i data-lucide="rocket" class="viral-icon"></i>
-        </div>
-        <h2>GitHub Viral Growth Dashboard</h2>
-        <p>Set viral metrics and deploy the Antigravity 2.0 launch engine to claim #1 on Trending!</p>
-      </div>
-
-      <div class="viral-stats-grid">
-        <div class="viral-stat-box">
-          <div class="stat-icon"><i data-lucide="star" class="text-orange fill-orange"></i></div>
-          <div class="stat-info">
-            <span class="stat-label">GitHub Stars</span>
-            <span class="stat-val" id="modal-star-count">12,504</span>
-          </div>
-        </div>
-        <div class="viral-stat-box">
-          <div class="stat-icon"><i data-lucide="git-fork" class="text-purple"></i></div>
-          <div class="stat-info">
-            <span class="stat-label">Forks</span>
-            <span class="stat-val" id="modal-fork-count">1,824</span>
-          </div>
-        </div>
-        <div class="viral-stat-box">
-          <div class="stat-icon"><i data-lucide="eye" class="text-cyan"></i></div>
-          <div class="stat-info">
-            <span class="stat-label">Active Visitors</span>
-            <span class="stat-val" id="modal-visitor-count">483</span>
-          </div>
-        </div>
-        <div class="viral-stat-box">
-          <div class="stat-icon"><i data-lucide="trending-up" class="text-green animate-bounce"></i></div>
-          <div class="stat-info">
-            <span class="stat-label">GitHub Rank</span>
-            <span class="stat-val" id="modal-rank">#1 Global</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="viral-split-panels">
-        <!-- Left Panel: Campaign Boosters -->
-        <div class="viral-left">
-          <h3>Campaign Launch Parameters</h3>
-          <div class="launch-actions-group">
-            <div class="booster-row">
-              <div class="booster-desc">
-                <h4>GitHub Star Booster</h4>
-                <p>Simulate star traffic from organic hacker communities</p>
-              </div>
-              <button class="btn btn-secondary btn-sm" id="boost-stars-btn"><i data-lucide="sparkles"></i> Boost +100</button>
-            </div>
-            
-            <div class="booster-row">
-              <div class="booster-desc">
-                <h4>Product Hunt Launchpad</h4>
-                <p>Generate high-converting Upvotes & feedback</p>
-              </div>
-              <button class="btn btn-secondary btn-sm" id="boost-ph-btn"><i data-lucide="award"></i> Mock Launch</button>
-            </div>
-
-            <div class="booster-row">
-              <div class="booster-desc">
-                <h4>Trending Page Hijack</h4>
-                <p>Inject social media buzz to rise in GitHub Trending</p>
-              </div>
-              <button class="btn btn-gradient btn-sm" id="trending-hijack-btn"><i data-lucide="trending-up"></i> Hijack #1 Spot</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right Panel: Viral Assets & Copy -->
-        <div class="viral-right">
-          <h3>Viral Marketing Assets</h3>
-          
-          <div class="viral-tabs">
-            <button class="vtab active" data-vtab="tweet">Twitter Pitch</button>
-            <button class="vtab" data-vtab="badges">Shields & Badges</button>
-            <button class="vtab" data-vtab="hackernews">HackerNews Copy</button>
-          </div>
-
-          <div class="vtab-content active" id="vtab-tweet">
-            <p class="asset-subtitle">Pre-written tweet optimized for maximum engagement:</p>
-            <div class="copy-box">
-              <pre id="tweet-copy-text">🚀 Introducing Antigravity 2.0 IDE: A next-gen glassmorphic, AI-native development workspace that defies gravity! Built-in Monaco editor, zero-G compile speed, and an intelligent co-pilot trained to launch viral projects. 🌌✨
-
-Check it out: github.com/antigravity-dev/antigravity-ide</pre>
-              <button class="btn btn-icon-only copy-btn" data-target="tweet-copy-text" title="Copy Tweet"><i data-lucide="copy"></i></button>
-            </div>
-          </div>
-
-          <div class="vtab-content" id="vtab-badges">
-            <p class="asset-subtitle">Add these badges to your README.md to look incredibly official:</p>
-            <div class="copy-box">
-              <pre id="badge-copy-text">[![Antigravity](https://img.shields.io/badge/Antigravity-2.0--IDE-blueviolet?style=for-the-badge&logo=spaceship)](https://github.com/antigravity-dev/antigravity-ide)
-[![GitHub stars](https://img.shields.io/github/stars/antigravity-dev/antigravity-ide?style=for-the-badge&color=gold)](https://github.com/antigravity-dev/antigravity-ide)
-[![Product Hunt](https://img.shields.io/badge/Product--Hunt-1--Product--of--the--Day-orange?style=for-the-badge)](https://producthunt.com/posts/antigravity-ide)</pre>
-              <button class="btn btn-icon-only copy-btn" data-target="badge-copy-text" title="Copy Markdown"><i data-lucide="copy"></i></button>
-            </div>
-          </div>
-
-          <div class="vtab-content" id="vtab-hackernews">
-            <p class="asset-subtitle">Hook for Show HN post:</p>
-            <div class="copy-box">
-              <pre id="hn-copy-text">Show HN: Antigravity 2.0 IDE – An AI-first workspace that defies gravity
-
-We built a space-grade web IDE featuring Monaco Editor, backdrop filters, an offline simulated compile engine, and a launchpad that makes your open-source projects go viral. Written in vanilla JS/CSS for zero bloat. Love to hear your feedback!</pre>
-              <button class="btn btn-icon-only copy-btn" data-target="hn-copy-text" title="Copy Title & Post"><i data-lucide="copy"></i></button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Real-time GitHub stream -->
-      <div class="live-activity-section">
-        <h3>Live Repository Feedback</h3>
-        <div class="activity-feed" id="activity-feed">
-          <!-- Populated by simulating reactions -->
-          <div class="feed-item">
-            <span class="user-avatar" style="background: var(--violet);">JS</span>
-            <div class="feed-body">
-              <strong>@js-wizard</strong> starred the repository. <em>"The glassmorphic design is beautiful, finally a fast alternative!"</em>
-              <span class="feed-time">Just now</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- Notification System -->

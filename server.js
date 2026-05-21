@@ -146,6 +146,18 @@ wss.on('connection', (ws, req) => {
   });
 });
 
+// Handle server startup errors
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log(`\n[Info] Antigravity backend is already running on port ${PORT}.`);
+    console.log(`Connecting to existing instance...`);
+    process.exit(0);
+  } else {
+    console.error(`[Server Error]`, err);
+    process.exit(1);
+  }
+});
+
 // Start Server listening strictly on loopback interface
 server.listen(PORT, HOST, () => {
   console.log(`=================================================`);
