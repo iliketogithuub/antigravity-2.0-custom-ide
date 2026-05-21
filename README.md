@@ -4,20 +4,21 @@
 
 [![Antigravity](https://img.shields.io/badge/Antigravity-2.0--IDE-blueviolet?style=for-the-badge&logo=spaceship)](https://github.com/iliketogithuub/antigravity-2.0-custom-ide)
 [![GitHub stars](https://img.shields.io/github/stars/iliketogithuub/antigravity-2.0-custom-ide?style=for-the-badge&color=gold)](https://github.com/iliketogithuub/antigravity-2.0-custom-ide)
-[![Product Hunt](https://img.shields.io/badge/Product--Hunt-1--Product--of--the--Day-orange?style=for-the-badge)](https://github.com/iliketogithuub/antigravity-2.0-custom-ide)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](https://github.com/iliketogithuub/antigravity-2.0-custom-ide/blob/main/LICENSE)
 
-**An ultra-premium, glassmorphic, AI-native IDE built with Gemini 3.5 Flash. Compiles code instantly, communicates with local hosts via WebSockets, and runs browser integrations to access external web assets.**
+**An ultra-premium, glassmorphic, AI-native IDE built with Gemini 3.5. Compiles code instantly, communicates with local hosts via WebSockets, and runs browser integrations to access external web assets.**
 
-[Live Repository](https://github.com/iliketogithuub/antigravity-2.0-custom-ide) • [Gemini 3.5 Spec](#-built-with-gemini-35-flash) • [Backend Setup](#-backend-and-connected-terminal) • [Viral Toolkit](#-github-virality-booster)
+<img src="og-preview.png" alt="Antigravity 2.0 IDE Banner" width="100%" style="border-radius: 12px; border: 1px solid rgba(155, 93, 229, 0.3); margin-top: 16px;">
+
+[Live Repository](https://github.com/iliketogithuub/antigravity-2.0-custom-ide) • [Gemini 3.5 Spec](#-built-with-gemini-35) • [Backend Setup](#-backend-and-connected-terminal) • [Viral Portal](#-viral-launch-portal)
 
 </div>
 
 ---
 
-## ⚡ Built with Gemini 3.5 Flash
+## ⚡ Built with Gemini 3.5
 
-This custom IDE was engineered entirely by **Antigravity 2.0** using Google DeepMind's **Gemini 3.5 Flash** model. By leveraging the model's ultra-fast context processing and highly efficient code generation, we built a fully functional IDE featuring:
+This custom IDE was engineered entirely by **Antigravity 2.0** using Google DeepMind's **Gemini 3.5** model. By leveraging the model's ultra-fast context processing and highly efficient code generation, we built a fully functional IDE featuring:
 1. A Monaco editor workspace.
 2. A real-time local shell connection.
 3. An HTTP-CORS bypass proxy.
@@ -34,7 +35,7 @@ All of this is compiled into a lightweight, high-performance static workspace th
 - ⚡ **Interactive God Mode**: Unleash autonomous workspace modifications! When toggled ON, the AI copilot writes files directly to your local computer storage via backend WebSocket integrations.
 - 🌐 **Split Live Browser View**: Open a fully functional web browser right next to your code editor. Powered by a CORS-free backend proxy mapping that dynamically rewrites relative assets to bypass cross-origin restrictions.
 - 💻 **Real Local Terminal Integration**: Connects dynamically to your local PC terminal shell (`bash`) via WebSockets to execute real commands and return console stdout/stderr.
-- 🚀 **GitHub Virality Launchpad**: Built-in engagement accelerator! Launch modal tracks stars, visitor ticks, Product Hunt upvotes, and simulates live developer comments.
+- 🚀 **Viral Launch Portal**: Spread the word instantly! Real-time social intent builders for X (Twitter), Hacker News, Reddit, and LinkedIn, plus copyable README markdown badges and star redirections to drive organic traffic.
 
 ---
 
@@ -153,12 +154,12 @@ npm run tauri dev
 
 ---
 
-## 📈 GitHub SEO & Virality Settings
+## 📈 GitHub SEO & Viral Growth
 
 To maximize organic search and discovery on GitHub:
 
 1. **Repository Description**: Copy and paste this short description:
-   > 🌌 An ultra-premium, glassmorphic, AI-native web IDE built with Gemini 3.5 Flash. Connected bash terminal, CORS-free web browsing proxy, Monaco Editor engine, and a viral star booster.
+   > 🌌 An ultra-premium, glassmorphic, AI-native web IDE built with Gemini 3.5. Connected bash terminal, CORS-free web browsing proxy, Monaco Editor engine, and a viral launch portal.
 2. **Topics / Tags**: Add these topics to your repository to gain organic views:
    `gemini-3-5`, `ai-ide`, `web-ide`, `monaco-editor`, `websocket-terminal`, `glassmorphism`, `developer-tools`, `self-hosted`
 

@@ -692,16 +692,29 @@ document.getElementById('git-commit-btn').addEventListener('click', () => {
     showToast("Please write a commit message!", "info");
     return;
   }
-  executeCommand(`git commit -m "${msg}"`);
+  if (isBackendConnected) {
+    socket.send(JSON.stringify({ type: 'input', data: `git add . && git commit -m "${msg.replace(/"/g, '\\"')}"\n` }));
+    appendTerminalRaw(`\n[Git] Staging changes and committing: "${msg}"\n`);
+  } else {
+    executeCommand(`git commit -m "${msg}"`);
+  }
   msgInput.value = '';
 });
 
 document.getElementById('git-push-btn').addEventListener('click', () => {
   const msgInput = document.getElementById('commit-msg');
   const msg = msgInput.value.trim() || 'feat: viral setup for antigravity workspace';
-  executeCommand(`git commit -m "${msg}"`);
+  if (isBackendConnected) {
+    socket.send(JSON.stringify({ type: 'input', data: `git add . && git commit -m "${msg.replace(/"/g, '\\"')}" && git push\n` }));
+    appendTerminalRaw(`\n[Git] Staging, committing, and pushing to repository...\n`);
+    setTimeout(() => {
+      openViralModal();
+    }, 3000);
+  } else {
+    executeCommand(`git commit -m "${msg}"`);
+    executeCommand('git push');
+  }
   msgInput.value = '';
-  executeCommand('git push');
 });
 
 // 6. AI Agent Chatbot Simulator
@@ -1423,6 +1436,73 @@ function logToSatellite(message) {
 
 // Hook header launch button
 document.getElementById('launch-dock-btn').addEventListener('click', openSidebarDock);
+
+// Viral Modal Management
+const viralModal = document.getElementById('viral-booster-modal');
+
+function openViralModal() {
+  if (viralModal) {
+    viralModal.classList.add('active');
+    setupViralShareUrls();
+    // Celebrate with confetti!
+    confetti({
+      particleCount: 80,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  }
+}
+
+window.openViralModal = openViralModal; // Export to global window so sidebar.html can call it!
+
+function closeViralModal() {
+  if (viralModal) {
+    viralModal.classList.remove('active');
+  }
+}
+
+// Setup social intent URLs
+function setupViralShareUrls() {
+  const repoUrl = "https://github.com/iliketogithuub/antigravity-2.0-custom-ide";
+  const text = encodeURIComponent("Defying gravity with Antigravity 2.0 IDE! 🌌 An ultra-premium, offline-first Monaco workspace with split-screen CORS-free proxy browser, and multi-window window-docking Satellite panel. Check it out: ");
+  const hashtags = "ai,webide,javascript,coding,developers";
+
+  document.getElementById('share-twitter-btn').href = `https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(repoUrl)}&hashtags=${hashtags}`;
+  document.getElementById('share-hn-btn').href = `https://news.ycombinator.com/submitlink?u=${encodeURIComponent(repoUrl)}&t=${encodeURIComponent("Show HN: Antigravity IDE 2.0 – Zero-Gravity, Offline-First Browser IDE")}`;
+  document.getElementById('share-reddit-btn').href = `https://www.reddit.com/submit?url=${encodeURIComponent(repoUrl)}&title=${encodeURIComponent("Antigravity 2.0 IDE – Cosmic, Offline-First Monaco Workspace in the Browser")}`;
+  document.getElementById('share-linkedin-btn').href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(repoUrl)}`;
+}
+
+// Wire up viral booster modal buttons
+document.getElementById('close-viral-modal').addEventListener('click', closeViralModal);
+
+// Close on overlay background click
+viralModal.addEventListener('click', (e) => {
+  if (e.target === viralModal) {
+    closeViralModal();
+  }
+});
+
+// Copy markdown badge
+document.getElementById('copy-badge-btn').addEventListener('click', () => {
+  const badgeMarkdown = `[![Built with Antigravity 2.0](https://img.shields.io/badge/Built%20with-Antigravity%202.0-violet?style=for-the-badge&logo=orbit&logoColor=00f0ff)](https://github.com/iliketogithuub/antigravity-2.0-custom-ide)`;
+  navigator.clipboard.writeText(badgeMarkdown)
+    .then(() => showToast("Markdown badge copied to clipboard!", "success"))
+    .catch(() => showToast("Failed to copy badge", "error"));
+});
+
+// Star repo
+document.getElementById('star-repo-btn').addEventListener('click', () => {
+  window.open("https://github.com/iliketogithuub/antigravity-2.0-custom-ide", "_blank");
+});
+
+// Copy repo link
+document.getElementById('copy-repo-link-btn').addEventListener('click', () => {
+  const repoUrl = "https://github.com/iliketogithuub/antigravity-2.0-custom-ide";
+  navigator.clipboard.writeText(repoUrl)
+    .then(() => showToast("Project URL copied to clipboard!", "success"))
+    .catch(() => showToast("Failed to copy URL", "error"));
+});
 
 // 10. Startup Initialization
 window.addEventListener('DOMContentLoaded', () => {

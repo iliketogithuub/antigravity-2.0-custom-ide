@@ -204,8 +204,8 @@
       <button class="btn btn-primary btn-full-width" id="btn-ping" style="margin-bottom: 4px;">
         <i data-lucide="radio"></i> Ping Main IDE
       </button>
-      <button class="btn btn-secondary btn-full-width" id="btn-trigger-stars">
-        <i data-lucide="star"></i> Inject Star Storm (+100)
+      <button class="btn btn-secondary btn-full-width" id="btn-trigger-viral">
+        <i data-lucide="rocket"></i> Launch Viral Portal
       </button>
     </div>
     
@@ -255,11 +255,11 @@
       }
     });
     
-    // Inject star storm command
-    document.getElementById('btn-trigger-stars').addEventListener('click', () => {
+    // Trigger viral booster portal command
+    document.getElementById('btn-trigger-viral').addEventListener('click', () => {
       if (window.opener && !window.opener.closed) {
-        window.opener.document.getElementById('boost-stars-btn').click();
-        addLog("Injected Star Storm campaign upvotes (+100 stars).");
+        window.opener.openViralModal();
+        addLog("Opened Viral Launch Portal from satellite dock.");
       }
     });
     

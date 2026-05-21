@@ -3,8 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- SEO & Open Graph Tags for Virality -->
   <title>Antigravity 2.0 IDE - Cosmic AI-Native Workspace</title>
-  <meta name="description" content="An ultra-premium, AI-first IDE designed for Antigravity 2.0. Boost your development, chat with state-of-the-art AI, and launch viral GitHub repositories instantly.">
+  <meta name="description" content="An ultra-premium, AI-first offline IDE with multi-window window-docking, CORS-free live browser split, and zero-G glassmorphism. Build the future with state-of-the-art AI.">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://github.com/iliketogithuub/antigravity-2.0-custom-ide">
+  <meta property="og:title" content="Antigravity 2.0 IDE - Cosmic AI-Native Workspace">
+  <meta property="og:description" content="An ultra-premium, AI-first offline IDE with multi-window window-docking, CORS-free live browser split, and zero-G glassmorphism. Build the future with state-of-the-art AI.">
+  <meta property="og:image" content="https://raw.githubusercontent.com/iliketogithuub/antigravity-2.0-custom-ide/main/og-preview.png">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://github.com/iliketogithuub/antigravity-2.0-custom-ide">
+  <meta property="twitter:title" content="Antigravity 2.0 IDE - Cosmic AI-Native Workspace">
+  <meta property="twitter:description" content="An ultra-premium, AI-first offline IDE with multi-window window-docking, CORS-free live browser split, and zero-G glassmorphism. Build the future with state-of-the-art AI.">
+  <meta property="twitter:image" content="https://raw.githubusercontent.com/iliketogithuub/antigravity-2.0-custom-ide/main/og-preview.png">
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -329,6 +344,59 @@
     </footer>
   </div>
 
+  </div>
+
+  <!-- Real Viral & SEO Booster Modal -->
+  <div class="modal-overlay" id="viral-booster-modal">
+    <div class="viral-modal-card">
+      <div class="viral-modal-header">
+        <div class="viral-modal-title">
+          <i data-lucide="rocket" class="text-pink animate-pulse"></i>
+          <h2>Viral Launch Portal</h2>
+        </div>
+        <button class="close-modal-btn" id="close-viral-modal" title="Close Portal"><i data-lucide="x"></i></button>
+      </div>
+      <div class="viral-modal-body">
+        <p class="viral-intro">Launch your workspace into high orbit! Share this project on major developer communities to gain stars and organic visibility.</p>
+        
+        <div class="viral-share-grid">
+          <!-- Twitter / X -->
+          <a href="#" id="share-twitter-btn" class="share-btn twitter" target="_blank">
+            <i data-lucide="twitter"></i>
+            <span>Post to X</span>
+          </a>
+          <!-- Hacker News -->
+          <a href="#" id="share-hn-btn" class="share-btn hn" target="_blank">
+            <i data-lucide="globe"></i>
+            <span>Submit HN</span>
+          </a>
+          <!-- Reddit -->
+          <a href="#" id="share-reddit-btn" class="share-btn reddit" target="_blank">
+            <i data-lucide="message-square"></i>
+            <span>Reddit Post</span>
+          </a>
+          <!-- LinkedIn -->
+          <a href="#" id="share-linkedin-btn" class="share-btn linkedin" target="_blank">
+            <i data-lucide="linkedin"></i>
+            <span>LinkedIn</span>
+          </a>
+        </div>
+
+        <div class="viral-badge-section">
+          <h3>🚀 Embed "Built with Antigravity" Badge</h3>
+          <p>Add this beautiful glow badge to your project's README to drive continuous traffic.</p>
+          <div class="badge-preview-container">
+            <img src="https://img.shields.io/badge/Built%20with-Antigravity%202.0-violet?style=for-the-badge&logo=orbit&logoColor=00f0ff" alt="Built with Antigravity 2.0 Badge" class="badge-preview-img">
+            <button id="copy-badge-btn" class="btn btn-secondary btn-sm"><i data-lucide="copy"></i> Copy Markdown</button>
+          </div>
+        </div>
+
+        <div class="viral-footer-actions">
+          <button id="star-repo-btn" class="btn btn-primary"><i data-lucide="star" class="fill-orange"></i> Star on GitHub</button>
+          <button id="copy-repo-link-btn" class="btn btn-secondary"><i data-lucide="link"></i> Copy Project URL</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Notification System -->

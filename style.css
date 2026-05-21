@@ -1661,3 +1661,198 @@ body::after {
   color: #fee440 !important;
   filter: drop-shadow(0 0 5px rgba(254, 228, 64, 0.5));
 }
+
+/* Viral Booster Modal Cards & Layout */
+.viral-modal-card {
+  background: rgba(11, 7, 24, 0.85);
+  border: 1px solid rgba(155, 93, 229, 0.4);
+  box-shadow: 0 16px 40px rgba(155, 93, 229, 0.25), inset 0 0 20px rgba(0, 240, 255, 0.1);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: white;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.viral-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.viral-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.viral-modal-title h2 {
+  font-family: var(--font-header);
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #00f0ff 0%, #9b5de5 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.close-modal-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-modal-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.viral-modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.viral-intro {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Share Grid & Social Buttons */
+.viral-share-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.share-btn.twitter {
+  background: rgba(29, 161, 242, 0.1);
+  border-color: rgba(29, 161, 242, 0.4);
+}
+.share-btn.twitter:hover {
+  background: rgba(29, 161, 242, 0.25);
+  box-shadow: 0 0 15px rgba(29, 161, 242, 0.3);
+  transform: translateY(-2px);
+}
+
+.share-btn.hn {
+  background: rgba(255, 102, 0, 0.1);
+  border-color: rgba(255, 102, 0, 0.4);
+}
+.share-btn.hn:hover {
+  background: rgba(255, 102, 0, 0.25);
+  box-shadow: 0 0 15px rgba(255, 102, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.share-btn.reddit {
+  background: rgba(255, 87, 34, 0.1);
+  border-color: rgba(255, 87, 34, 0.4);
+}
+.share-btn.reddit:hover {
+  background: rgba(255, 87, 34, 0.25);
+  box-shadow: 0 0 15px rgba(255, 87, 34, 0.3);
+  transform: translateY(-2px);
+}
+
+.share-btn.linkedin {
+  background: rgba(0, 119, 181, 0.1);
+  border-color: rgba(0, 119, 181, 0.4);
+}
+.share-btn.linkedin:hover {
+  background: rgba(0, 119, 181, 0.25);
+  box-shadow: 0 0 15px rgba(0, 119, 181, 0.3);
+  transform: translateY(-2px);
+}
+
+.share-btn i {
+  width: 16px;
+  height: 16px;
+}
+
+/* Badge Section */
+.viral-badge-section {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.viral-badge-section h3 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--violet);
+}
+
+.viral-badge-section p {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.badge-preview-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.badge-preview-img {
+  height: 20px;
+}
+
+.viral-footer-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.viral-footer-actions button {
+  flex: 1;
+}
