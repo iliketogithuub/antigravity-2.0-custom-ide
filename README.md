@@ -63,15 +63,15 @@ Choose the setup guide matching your operating system below to configure manuall
    cd antigravity-2.0-custom-ide
    npm install
    ```
-3. **Launch Backend**:
+3. **Launch Backend** (Open a terminal tab):
    ```bash
    npm start
    ```
-4. **Serve Frontend**:
+4. **Serve Frontend** (Open a **second** terminal tab):
    ```bash
    python3 -m http.server 8080
    ```
-   Open [http://localhost:8080](http://localhost:8080) and click **"Launch Satellite Panel"** in the header. Allow browser popup permissions when prompted. The Apple Aqua viewport coordinates will align instantly.
+   Open [http://localhost:8080](http://localhost:8080) in your browser.
 
 ### 🪟 Windows Setup
 1. **Prerequisites**: Download and install [Node.js](https://nodejs.org/) and Git.
@@ -82,16 +82,16 @@ Choose the setup guide matching your operating system below to configure manuall
    cd antigravity-2.0-custom-ide
    npm install
    ```
-3. **Launch Backend**:
+3. **Launch Backend** (Open a terminal tab):
    ```cmd
    npm start
    ```
-4. **Serve Frontend**:
+4. **Serve Frontend** (Open a **second** terminal tab):
    ```cmd
    # Using Node.js live-server
    npx live-server --port=8080
    ```
-   Open [http://localhost:8080](http://localhost:8080). Windows Aero resize handle shadow offsets (`-8px`) are automatically compensated for a seamless edge alignment.
+   Open [http://localhost:8080](http://localhost:8080) in your browser.
 
 ### 🐧 Linux Setup
 1. **Prerequisites**: Ensure Node.js and Git are installed via your package manager:
@@ -106,15 +106,18 @@ Choose the setup guide matching your operating system below to configure manuall
    cd antigravity-2.0-custom-ide
    npm install
    ```
-3. **Launch Backend**:
+3. **Launch Backend** (Open a terminal tab):
    ```bash
    npm start
    ```
-4. **Serve Frontend**:
+4. **Serve Frontend** (Open a **second** terminal tab):
    ```bash
    python3 -m http.server 8080
    ```
-   Open [http://localhost:8080](http://localhost:8080) in your browser. Standard Wayland/X11 alignment rules will automatically align the Satellite Panel.
+   Open [http://localhost:8080](http://localhost:8080) in your browser.
+
+> [!TIP]
+> Instead of manually managing multiple terminals, you can simply run the automated script launcher **`./start.sh`** (on macOS/Linux) or **`start.bat`** (on Windows) which handles starting the backend and frontend in the background concurrently and launches your browser automatically.
 
 ---
 
