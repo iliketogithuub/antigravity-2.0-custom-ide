@@ -154,6 +154,51 @@
       box-shadow: 0 0 8px var(--cyan);
       animation: pulse 1.5s infinite;
     }
+    
+    .ai-tasks-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .ai-task-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .ai-task-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+    }
+    .ai-task-name {
+      font-weight: 600;
+      color: white;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 145px;
+    }
+    .ai-task-status {
+      font-size: 10px;
+      color: var(--cyan);
+      font-family: var(--font-code);
+    }
+    .ai-task-status.completed {
+      color: var(--green);
+    }
+    .no-tasks {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 10px 0;
+    }
   </style>
 </head>
 <body class="theme-space-dark">
@@ -195,6 +240,14 @@
       </div>
       <div class="progress-bar-container">
         <div class="progress-fill" id="network-fill" style="width: 0%;"></div>
+      </div>
+    </div>
+
+    <!-- 1.5 Active AI Prompt Tasks -->
+    <div class="dock-card">
+      <h3>Active AI Prompt Tasks</h3>
+      <div id="ai-tasks-list" class="ai-tasks-list">
+        <div class="no-tasks">No active background tasks.</div>
       </div>
     </div>
     
@@ -276,10 +329,43 @@
     
     // Listen for incoming messages from opener
     window.addEventListener('message', (e) => {
-      if (e.data && e.data.type === 'log') {
+      if (!e.data) return;
+      if (e.data.type === 'log') {
         addLog(e.data.message);
+      } else if (e.data.type === 'tasks-update') {
+        updateTasksList(e.data.tasks);
       }
     });
+    
+    function updateTasksList(tasks) {
+      const container = document.getElementById('ai-tasks-list');
+      if (!container) return;
+      container.innerHTML = '';
+      
+      const activeTasks = tasks.filter(t => t.id !== 'default');
+      if (activeTasks.length === 0) {
+        container.innerHTML = '<div class="no-tasks">No active background tasks.</div>';
+        return;
+      }
+      
+      activeTasks.forEach(task => {
+        const item = document.createElement('div');
+        item.className = 'ai-task-item';
+        item.innerHTML = `
+          <div class="ai-task-meta">
+            <span class="ai-task-name">${task.name}</span>
+            <span class="ai-task-status ${task.status}">${task.status.toUpperCase()} (${task.progress}%)</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-fill" style="width: ${task.progress}%; background: ${task.status === 'completed' ? 'var(--green)' : 'linear-gradient(90deg, var(--cyan) 0%, var(--violet) 100%)'};"></div>
+          </div>
+          <div style="font-size: 9.5px; color: var(--text-muted); font-family: var(--font-code); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;">
+            &gt; ${task.lastLog || ''}
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
   </script>
 </body>
 </html>

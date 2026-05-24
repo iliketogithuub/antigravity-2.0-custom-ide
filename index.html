@@ -47,6 +47,10 @@
         <h1>Antigravity <span class="accent-text">2.0</span> <span class="badge">IDE</span></h1>
       </div>
       <div class="header-controls">
+        <label class="header-godmode-toggle" title="Toggle God Mode (Auto-Allow Everything)">
+          <input type="checkbox" id="header-godmode-checkbox">
+          <span>⚡ GOD MODE</span>
+        </label>
         <button id="launch-dock-btn" class="btn btn-secondary btn-sm" title="Launch Detached Satellite Dock">
           <i data-lucide="external-link"></i> Launch Satellite Panel
         </button>
@@ -313,7 +317,21 @@
             <h3>Antigravity 2.0 AI</h3>
             <span class="status-indicator online">Online (Zero-G)</span>
           </div>
-          <button id="toggle-chat" title="Collapse AI panel"><i data-lucide="chevron-right"></i></button>
+          <div class="chat-header-actions" style="display: flex; align-items: center;">
+            <label class="chat-godmode-toggle" title="Toggle God Mode">
+              <input type="checkbox" id="chat-godmode-checkbox">
+              <span>⚡ GOD</span>
+            </label>
+            <button id="toggle-chat" title="Collapse AI panel"><i data-lucide="chevron-right"></i></button>
+          </div>
+        </div>
+
+        <!-- Thread Management -->
+        <div class="chat-threads-bar">
+          <div class="threads-list" id="threads-list">
+            <!-- Dynamically populated thread buttons -->
+          </div>
+          <button class="add-thread-btn" id="add-thread-btn" title="New Prompt Task"><i data-lucide="plus"></i></button>
         </div>
 
         <!-- Predefined quick commands -->

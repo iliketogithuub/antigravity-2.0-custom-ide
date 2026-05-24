@@ -1097,21 +1097,196 @@ function formatMarkdown(text) {
   return res.replace(/\n/g, '<br>');
 }
 
+// Multiple AI Threads & Background Prompts
+let promptThreads = new Map();
+let currentThreadId = 'default';
+
+// Add default thread
+promptThreads.set('default', {
+  id: 'default',
+  name: 'General Chat',
+  messages: [
+    { text: "Welcome to the **Antigravity 2.0 IDE**. I am your integrated AI assistant. Ask me to refactor code or generate scripts.", sender: 'system' }
+  ],
+  status: 'completed',
+  progress: 100,
+  logs: ['System ready.']
+});
+
+function renderThreads() {
+  const list = document.getElementById('threads-list');
+  if (!list) return;
+  list.innerHTML = '';
+  
+  promptThreads.forEach(thread => {
+    const tab = document.createElement('div');
+    tab.className = `thread-tab ${thread.id === currentThreadId ? 'active' : ''} ${thread.status === 'running' ? 'running' : ''}`;
+    tab.innerHTML = `
+      <span>${thread.name}</span>
+      ${thread.status === 'running' ? `<span class="thread-progress" style="width: ${thread.progress}%"></span>` : ''}
+    `;
+    
+    tab.addEventListener('click', () => {
+      currentThreadId = thread.id;
+      renderThreads();
+      renderMessages();
+    });
+    
+    list.appendChild(tab);
+  });
+}
+
+function renderMessages() {
+  const container = document.getElementById('chat-messages');
+  if (!container) return;
+  container.innerHTML = '';
+  
+  const thread = promptThreads.get(currentThreadId);
+  if (!thread) return;
+  
+  thread.messages.forEach(msg => {
+    const div = document.createElement('div');
+    div.className = `message ${msg.sender}`;
+    const content = document.createElement('div');
+    content.className = 'message-content';
+    content.innerHTML = formatMarkdown(msg.text);
+    div.appendChild(content);
+    container.appendChild(div);
+  });
+  
+  // Render logs if running
+  if (thread.status === 'running') {
+    const logsDiv = document.createElement('div');
+    logsDiv.className = 'message system-msg';
+    logsDiv.innerHTML = `
+      <div class="message-content" style="font-family: monospace; font-size: 10.5px; opacity: 0.85;">
+        <div style="font-weight: bold; margin-bottom: 4px; color: var(--cyan);">⚡ Background Executing [${thread.progress}%]...</div>
+        ${thread.logs.map(log => `<div>&gt; ${log}</div>`).join('')}
+      </div>
+    `;
+    container.appendChild(logsDiv);
+    
+    // Add typing indicator
+    const typing = document.createElement('div');
+    typing.className = 'message agent typing-msg';
+    typing.innerHTML = `
+      <div class="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    `;
+    container.appendChild(typing);
+  }
+  
+  container.scrollTop = container.scrollHeight;
+}
+
 function handleChatMessage() {
   const text = chatInput.value.trim();
   if (!text) return;
-  
-  appendMessage(text, 'user');
   chatInput.value = '';
   
-  showTypingIndicator();
+  // Spawn a new background task thread
+  const threadId = 'thread_' + Date.now();
+  const taskName = text.length > 20 ? text.substring(0, 17) + '...' : text;
   
-  setTimeout(() => {
-    hideTypingIndicator();
-    const reply = getAIResponse(text);
-    appendMessage(reply, 'agent');
-  }, 1000);
+  promptThreads.set(threadId, {
+    id: threadId,
+    name: taskName,
+    messages: [{ text: text, sender: 'user' }],
+    status: 'running',
+    progress: 0,
+    logs: ['Initializing background reasoning engine...', 'Analyzing workspace dependencies...']
+  });
+  
+  currentThreadId = threadId;
+  renderThreads();
+  renderMessages();
+  
+  runPromptTask(threadId, text);
 }
+
+function runPromptTask(threadId, text) {
+  const thread = promptThreads.get(threadId);
+  if (!thread) return;
+  
+  const stepLogs = [
+    { p: 15, log: 'Parsing local file content patterns...' },
+    { p: 30, log: 'Cross-referencing gravity equations against physics-engine.js...' },
+    { p: 55, log: 'Computing memory vector optimization variables...' },
+    { p: 75, log: 'Validating AST compiler compliance rates...' },
+    { p: 90, log: 'Generating refactored patch files...' },
+    { p: 100, log: 'Applying changes to virtual filesystem...' }
+  ];
+  
+  let currentStep = 0;
+  
+  const interval = setInterval(() => {
+    const t = promptThreads.get(threadId);
+    if (!t) { clearInterval(interval); return; }
+    
+    if (currentStep < stepLogs.length) {
+      const step = stepLogs[currentStep];
+      t.progress = step.p;
+      t.logs.push(step.log);
+      
+      if (step.p === 100) {
+        t.status = 'completed';
+        clearInterval(interval);
+        
+        // Append response
+        const reply = getAIResponse(text);
+        t.messages.push({ text: reply, sender: 'agent' });
+        
+        // Show completion notifications
+        showToast(`AI Task Completed: "${t.name}"`, 'success');
+        
+        if (typeof confetti !== 'undefined') {
+          confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 } });
+        }
+      }
+      
+      currentStep++;
+      if (currentThreadId === threadId) {
+        renderMessages();
+        renderThreads();
+      }
+      syncSatelliteTasks();
+    }
+  }, 700);
+}
+
+function syncSatelliteTasks() {
+  if (sidebarWindow && !sidebarWindow.closed) {
+    const tasks = Array.from(promptThreads.values()).map(t => ({
+      id: t.id,
+      name: t.name,
+      status: t.status,
+      progress: t.progress,
+      lastLog: t.logs[t.logs.length - 1]
+    }));
+    sidebarWindow.postMessage({ type: 'tasks-update', tasks }, '*');
+  }
+}
+
+document.getElementById('add-thread-btn').addEventListener('click', () => {
+  const name = prompt("Enter prompt task name:", "Custom Task " + (promptThreads.size + 1));
+  if (!name) return;
+  const threadId = 'thread_' + Date.now();
+  promptThreads.set(threadId, {
+    id: threadId,
+    name: name,
+    messages: [{ text: `Task created: ${name}. Type a query below to start the background AI agent!`, sender: 'system' }],
+    status: 'completed',
+    progress: 100,
+    logs: ['Manual thread created.']
+  });
+  currentThreadId = threadId;
+  renderThreads();
+  renderMessages();
+  syncSatelliteTasks();
+});
 
 chatSendBtn.addEventListener('click', handleChatMessage);
 chatInput.addEventListener('keydown', (e) => {
@@ -1122,17 +1297,51 @@ chatInput.addEventListener('keydown', (e) => {
 document.querySelectorAll('.chat-template-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const promptText = btn.dataset.prompt;
-    appendMessage(promptText, 'user');
-    showTypingIndicator();
     
-    setTimeout(() => {
-      hideTypingIndicator();
-      let reply = "";
-      const isGodMode = document.getElementById('setting-godmode').checked;
+    // Spawn a background thread task for templates
+    const threadId = 'thread_' + Date.now();
+    const taskName = btn.textContent.trim();
+    
+    promptThreads.set(threadId, {
+      id: threadId,
+      name: taskName,
+      messages: [{ text: promptText, sender: 'user' }],
+      status: 'running',
+      progress: 0,
+      logs: ['Spinning up template compiler...', 'Ingesting target buffer...']
+    });
+    
+    currentThreadId = threadId;
+    renderThreads();
+    renderMessages();
+    
+    const stepLogs = [
+      { p: 25, log: 'Auditing index.js & styles.css target bounds...' },
+      { p: 55, log: 'Generating AST transformations...' },
+      { p: 85, log: 'Validating compilation margins...' },
+      { p: 100, log: 'Applying template refactor.' }
+    ];
+    
+    let currentStep = 0;
+    const interval = setInterval(() => {
+      const t = promptThreads.get(threadId);
+      if (!t) { clearInterval(interval); return; }
       
-      if (promptText.includes("Optimize")) {
-        if (activeFile === 'physics-engine.js') {
-          const optimizedCode = `/**
+      if (currentStep < stepLogs.length) {
+        const step = stepLogs[currentStep];
+        t.progress = step.p;
+        t.logs.push(step.log);
+        
+        if (step.p === 100) {
+          t.status = 'completed';
+          clearInterval(interval);
+          
+          let reply = "";
+          const isGodMode = document.getElementById('setting-godmode').checked;
+          
+          if (promptText.includes("Optimize")) {
+            if (activeFile === 'physics-engine.js') {
+              const optimizedCode = `/**
  * Antigravity calculation matrix
  * Defies standard relativity constraints
  * OPTIMIZED: Memoized computation vector cache
@@ -1160,29 +1369,29 @@ exports.calculateLift = function(mass) {
   computationCache.set(mass, result);
   return result;
 };`;
-          files['physics-engine.js'].content = optimizedCode;
-          if (editor && activeFile === 'physics-engine.js') {
-            editor.setValue(optimizedCode);
-          }
-          
-          if (isGodMode && isBackendConnected) {
-            socket.send(JSON.stringify({
-              type: 'input',
-              data: `cat << 'EOF' > physics-engine.js\n${optimizedCode}\nEOF\n`
-            }));
-            reply = "🚀 **GOD MODE ACTIVE**: Optimized code injected directly to your local workspace path: `physics-engine.js`! Shell compilation executed successfully.";
-          } else {
-            reply = "🚀 I have optimized **physics-engine.js** in memory:\n- Implemented a standard memory cache Map to store computations.\n- Replaced raw runtime random math variables with static equilibrium coefficient to reduce variance jitters.\n- Cleaned comments for faster JS compiling. The file will load **35% faster** now!";
-          }
-        } else {
-          reply = `I can help optimize **${activeFile}**. Try switching to \`physics-engine.js\` for a demonstration of my automatic source optimization module.`;
-        }
-      } 
-      else if (promptText.includes("Bugs")) {
-        reply = `🔍 Checked **${activeFile}**:\n- **No critical vulnerabilities found**.\n- *Recommendation*: Ensure you validate that division parameters do not reach 0 when calculations are pushed near high gravity boundaries.`;
-      } 
-      else if (promptText.includes("Test")) {
-        const testCode = `// Antigravity Quantum Vector Test Suite
+              files['physics-engine.js'].content = optimizedCode;
+              if (editor && activeFile === 'physics-engine.js') {
+                editor.setValue(optimizedCode);
+              }
+              
+              if (isGodMode && isBackendConnected) {
+                socket.send(JSON.stringify({
+                  type: 'input',
+                  data: `cat << 'EOF' > physics-engine.js\n${optimizedCode}\nEOF\n`
+                }));
+                reply = "🚀 **GOD MODE ACTIVE**: Optimized code injected directly to your local workspace path: `physics-engine.js`! Shell compilation executed successfully.";
+              } else {
+                reply = "🚀 I have optimized **physics-engine.js** in memory:\n- Implemented a standard memory cache Map to store computations.\n- Replaced raw runtime random math variables with static equilibrium coefficient to reduce variance jitters.\n- Cleaned comments for faster JS compiling. The file will load **35% faster** now!";
+              }
+            } else {
+              reply = `I can help optimize **${activeFile}**. Try switching to \`physics-engine.js\` for a demonstration of my automatic source optimization module.`;
+            }
+          } 
+          else if (promptText.includes("Bugs")) {
+            reply = `🔍 Checked **${activeFile}**:\n- **No critical vulnerabilities found**.\n- *Recommendation*: Ensure you validate that division parameters do not reach 0 when calculations are pushed near high gravity boundaries.`;
+          } 
+          else if (promptText.includes("Test")) {
+            const testCode = `// Antigravity Quantum Vector Test Suite
 const physics = require('./physics-engine');
 
 describe('Antigravity Physics Engine Spec', () => {
@@ -1193,34 +1402,48 @@ describe('Antigravity Physics Engine Spec', () => {
     expect(lift.equilibriumReached).toBe(true);
   });
 });`;
-        
-        files['physics.test.js'] = {
-          name: 'physics.test.js',
-          path: 'physics.test.js',
-          type: 'file',
-          icon: 'file-check-2',
-          language: 'javascript',
-          content: testCode
-        };
-        
-        switchToFile('physics.test.js');
-        
-        if (isGodMode && isBackendConnected) {
-          socket.send(JSON.stringify({
-            type: 'input',
-            data: `cat << 'EOF' > physics.test.js\n${testCode}\nEOF\n`
-          }));
-          reply = "✅ **GOD MODE ACTIVE**: Generated real unit test suite inside **physics.test.js** directly on your local computer via WebSocket command pipeline!";
-        } else {
-          reply = "✅ Generated unit test suite inside new file **physics.test.js** in memory! Click to check out the structure. You can run `npm run test` in terminal to check validity.";
+            
+            files['physics.test.js'] = {
+              name: 'physics.test.js',
+              path: 'physics.test.js',
+              type: 'file',
+              icon: 'file-check-2',
+              language: 'javascript',
+              content: testCode
+            };
+            
+            switchToFile('physics.test.js');
+            
+            if (isGodMode && isBackendConnected) {
+              socket.send(JSON.stringify({
+                type: 'input',
+                data: `cat << 'EOF' > physics.test.js\n${testCode}\nEOF\n`
+              }));
+              reply = "✅ **GOD MODE ACTIVE**: Generated real unit test suite inside **physics.test.js** directly on your local computer via WebSocket command pipeline!";
+            } else {
+              reply = "✅ Generated unit test suite inside new file **physics.test.js** in memory! Click to check out the structure. You can run `npm run test` in terminal to check validity.";
+            }
+          } 
+          else if (promptText.includes("Viral")) {
+            reply = "📢 Generate viral engagement for **Antigravity 2.0 IDE**! I have compiled social links and headlines inside the **Launch Center**. Click the rocket icon in the sidebar to open the Viral Boost toolkit.";
+          }
+          
+          t.messages.push({ text: reply, sender: 'agent' });
+          showToast(`AI Task Completed: "${t.name}"`, 'success');
+          
+          if (typeof confetti !== 'undefined') {
+            confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 } });
+          }
         }
-      } 
-      else if (promptText.includes("Viral")) {
-        reply = "📢 Generate viral engagement for **Antigravity 2.0 IDE**! I have compiled social links and headlines inside the **Launch Center**. Click the rocket icon in the sidebar to open the Viral Boost toolkit.";
+        
+        currentStep++;
+        if (currentThreadId === threadId) {
+          renderMessages();
+          renderThreads();
+        }
+        syncSatelliteTasks();
       }
-      
-      appendMessage(reply, 'agent');
-    }, 1200);
+    }, 700);
   });
 });
 
@@ -1718,21 +1941,39 @@ if (rotateBtn) {
   });
 }
 
-// God Mode Toggle Event Handling
+// God Mode Toggle Event Handling (Synchronized across Header, Chat, and Settings)
 const godmodeToggle = document.getElementById('setting-godmode');
-godmodeToggle.addEventListener('change', () => {
-  const active = godmodeToggle.checked;
+const chatGodmodeToggle = document.getElementById('chat-godmode-checkbox');
+const headerGodmodeToggle = document.getElementById('header-godmode-checkbox');
+
+function syncGodModeState(active) {
   localStorage.setItem('antigravity_godmode', active);
+  
+  if (godmodeToggle) godmodeToggle.checked = active;
+  if (chatGodmodeToggle) chatGodmodeToggle.checked = active;
+  if (headerGodmodeToggle) headerGodmodeToggle.checked = active;
+  
+  const appContainer = document.querySelector('.app-container');
   if (active) {
     showToast("⚡ GOD MODE ENABLED: AI auto-allow write actions authorized!", "info");
     appendTerminalRaw("\n⚡ [GOD MODE] Elevating access parameters... Auto-allow active.\n");
-    document.querySelector('.app-container').classList.add('godmode-active');
+    if (appContainer) appContainer.classList.add('godmode-active');
   } else {
     showToast("God Mode disabled.", "info");
     appendTerminalRaw("\n[GOD MODE] Restoring standard sandbox restrictions.\n");
-    document.querySelector('.app-container').classList.remove('godmode-active');
+    if (appContainer) appContainer.classList.remove('godmode-active');
   }
-});
+}
+
+if (godmodeToggle) {
+  godmodeToggle.addEventListener('change', () => syncGodModeState(godmodeToggle.checked));
+}
+if (chatGodmodeToggle) {
+  chatGodmodeToggle.addEventListener('change', () => syncGodModeState(chatGodmodeToggle.checked));
+}
+if (headerGodmodeToggle) {
+  headerGodmodeToggle.addEventListener('change', () => syncGodModeState(headerGodmodeToggle.checked));
+}
 // 9.6 Detached Satellite Dock Synchronization
 let sidebarWindow = null;
 const SIDEBAR_WIDTH = 320;
@@ -1925,10 +2166,16 @@ window.addEventListener('DOMContentLoaded', () => {
   
   // Restore God Mode state (default to true on first load)
   const savedGodmode = localStorage.getItem('antigravity_godmode') !== 'false';
-  godmodeToggle.checked = savedGodmode;
+  if (godmodeToggle) godmodeToggle.checked = savedGodmode;
+  if (chatGodmodeToggle) chatGodmodeToggle.checked = savedGodmode;
+  if (headerGodmodeToggle) headerGodmodeToggle.checked = savedGodmode;
   if (savedGodmode) {
     document.querySelector('.app-container').classList.add('godmode-active');
   }
+  
+  // Initialize AI Chat threads
+  renderThreads();
+  renderMessages();
   
   // Trigger initial icons build
   lucide.createIcons();

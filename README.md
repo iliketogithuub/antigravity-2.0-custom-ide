@@ -45,10 +45,15 @@ The IDE is pre-configured with **one-click auto-setup script launchers** for all
 
 ### ⚡ One-Click Launch (Recommended)
 - **Windows**: Double-click `start.bat` in the root folder.
-- **macOS & Linux**: Open terminal in the root folder and run:
-  ```bash
-  chmod +x start.sh && ./start.sh
-  ```
+- **macOS & Linux**:
+  1. **Prerequisite Setup** (Paste and run this single line to automatically install Node.js, npm, and Git on Debian/Ubuntu/Zorin, Fedora, Arch, or macOS):
+     ```bash
+     if command -v apt-get >/dev/null; then sudo apt-get update && sudo apt-get install -y nodejs npm git; elif command -v dnf >/dev/null; then sudo dnf install -y nodejs git; elif command -v pacman >/dev/null; then sudo pacman -Syu --noconfirm nodejs git; elif command -v brew >/dev/null; then brew install node git; else echo "Package manager not found. Please install nodejs & git manually."; fi
+     ```
+  2. **Launch IDE** (Run this to auto-configure npm, spin up both servers in the background, and open the browser):
+     ```bash
+     chmod +x start.sh && ./start.sh
+     ```
 
 ---
 
