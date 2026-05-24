@@ -92,6 +92,7 @@
           <div class="panel-header">
             <h2>Explorer</h2>
             <div class="panel-actions">
+              <button id="clone-repo-btn" title="Clone GitHub Repository"><i data-lucide="git-fork"></i></button>
               <button id="import-folder-btn" title="Import Local Folder"><i data-lucide="folder-down"></i></button>
               <button id="import-file-btn" title="Import Files"><i data-lucide="file-down"></i></button>
               <button id="new-file-btn" title="New File"><i data-lucide="file-plus"></i></button>
@@ -225,8 +226,33 @@
                 </div>
                 <button class="btn btn-primary btn-sm" id="browser-btn-go">Go</button>
               </div>
+
+              <!-- Sizing & Device Simulation Toolbar -->
+              <div class="browser-device-bar">
+                <div class="device-group">
+                  <i data-lucide="monitor" class="device-bar-icon"></i>
+                  <select id="browser-device-preset" class="device-select">
+                    <option value="responsive">🌐 Responsive (Full)</option>
+                    <option value="desktop-16-9">🖥️ Desktop (16:9)</option>
+                    <option value="desktop-4-3">📺 Classic Monitor (4:3)</option>
+                    <option value="tablet">📱 Tablet (iPad)</option>
+                    <option value="mobile">📲 Mobile (iPhone)</option>
+                  </select>
+                </div>
+                <div class="device-dims">
+                  <input type="number" id="browser-device-width" class="dim-input" placeholder="W" min="200" max="3000" disabled>
+                  <span>×</span>
+                  <input type="number" id="browser-device-height" class="dim-input" placeholder="H" min="200" max="3000" disabled>
+                  <button id="browser-btn-rotate" class="browser-nav-btn" title="Rotate Orientation" style="display: none;">
+                    <i data-lucide="refresh-cw"></i>
+                  </button>
+                </div>
+              </div>
+
               <div class="browser-view-container">
-                <iframe id="browser-iframe" src="about:blank"></iframe>
+                <div id="browser-iframe-wrapper" class="responsive">
+                  <iframe id="browser-iframe" src="about:blank"></iframe>
+                </div>
               </div>
             </div>
             

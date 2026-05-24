@@ -103,6 +103,7 @@ exports.calculateLift = function(mass) {
 };
 
 let activeFile = 'README.md';
+let rootDirHandle = null;
 let editor = null;
 let currentTheme = 'theme-space-dark';
 let socket = null;
@@ -245,9 +246,14 @@ function renderExplorer() {
   lucide.createIcons();
 }
 
-function switchToFile(fileName) {
+async function switchToFile(fileName) {
   if (!files[fileName]) return;
   activeFile = fileName;
+  
+  if (files[fileName].isGitUnloaded) {
+    showToast(`Fetching ${fileName} content from GitHub...`, 'info');
+    await fetchGitContent(fileName);
+  }
   
   if (editor) {
     const model = monaco.editor.createModel(files[fileName].content, files[fileName].language);
@@ -380,20 +386,344 @@ document.getElementById('new-file-btn').addEventListener('click', async () => {
 });
 
 // Open Local Folder / Workspace Mount
-document.getElementById('new-folder-btn').addEventListener('click', async () => {
+document.getElementById('import-folder-btn').addEventListener('click', async () => {
   try {
-    const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    if (window.showDirectoryPicker) {
+      const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      rootDirHandle = dirHandle;
+      
+      // Clear existing mock files
+      for (let key in files) delete files[key];
+      modifiedFiles.clear();
+      
+      // Function to recursively read directory
+      async function readDir(dirHandle, path = '') {
+        for await (const entry of dirHandle.values()) {
+          const entryPath = path ? `${path}/${entry.name}` : entry.name;
+          if (entry.kind === 'file') {
+            try {
+              const file = await entry.getFile();
+              const content = await file.text();
+              let ext = entry.name.split('.').pop().toLowerCase();
+              let lang = 'javascript';
+              let icon = 'file-code-2';
+              
+              if (ext === 'md') { lang = 'markdown'; icon = 'file-text'; }
+              else if (ext === 'json') { lang = 'json'; icon = 'braces'; }
+              else if (ext === 'css') { lang = 'css'; icon = 'file-type-2'; }
+              else if (ext === 'html') { lang = 'html'; icon = 'file-code'; }
+              else if (ext === 'ts') { lang = 'typescript'; icon = 'file-code-2'; }
+              
+              files[entryPath] = {
+                name: entry.name,
+                path: entryPath,
+                type: 'file',
+                icon: icon,
+                language: lang,
+                content: content,
+                fileHandle: entry
+              };
+            } catch(e) {
+              console.warn("Skipped unreadable file:", entry.name);
+            }
+          } else if (entry.kind === 'directory') {
+            // Ignore heavy vendor directories
+            if (entry.name !== 'node_modules' && entry.name !== '.git' && entry.name !== 'dist' && entry.name !== 'build') {
+              await readDir(entry, entryPath);
+            }
+          }
+        }
+      }
+      
+      showToast(`Loading workspace from ${dirHandle.name}...`, 'info');
+      await readDir(dirHandle);
+      
+      renderExplorer();
+      const firstFile = Object.keys(files)[0];
+      if (firstFile) switchToFile(firstFile);
+      
+      document.querySelector('.tree-folder span').textContent = dirHandle.name;
+      updateGitPanel();
+      showToast(`Mounted native workspace: ${dirHandle.name}`, 'success');
+      appendTerminalRaw(`\n[Workspace] Mounted directory: ${dirHandle.name} with ${Object.keys(files).length} files.\n`);
+    } else {
+      document.getElementById('hidden-folder-input').click();
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      console.error(err);
+      showToast("Failed to mount folder", "error");
+    }
+  }
+});
+
+// Import Files
+document.getElementById('import-file-btn').addEventListener('click', () => {
+  document.getElementById('hidden-file-input').click();
+});
+
+document.getElementById('hidden-file-input').addEventListener('change', (e) => {
+  const fileList = e.target.files;
+  if (fileList.length === 0) return;
+  
+  let loadedCount = 0;
+  for (let i = 0; i < fileList.length; i++) {
+    const file = fileList[i];
+    const reader = new FileReader();
+    reader.onload = async function(evt) {
+      const content = evt.target.result;
+      let ext = file.name.split('.').pop().toLowerCase();
+      let lang = 'javascript';
+      let icon = 'file-code-2';
+      
+      if (ext === 'md') { lang = 'markdown'; icon = 'file-text'; }
+      else if (ext === 'json') { lang = 'json'; icon = 'braces'; }
+      else if (ext === 'css') { lang = 'css'; icon = 'file-type-2'; }
+      else if (ext === 'html') { lang = 'html'; icon = 'file-code'; }
+      else if (ext === 'ts') { lang = 'typescript'; icon = 'file-code-2'; }
+      
+      // Save to disk if workspace is mounted
+      let fileHandle = null;
+      if (rootDirHandle) {
+        try {
+          fileHandle = await rootDirHandle.getFileHandle(file.name, { create: true });
+          const writable = await fileHandle.createWritable();
+          await writable.write(content);
+          await writable.close();
+        } catch(err) {
+          console.error("Could not save imported file to disk:", err);
+        }
+      }
+      
+      files[file.name] = {
+        name: file.name,
+        path: file.name,
+        type: 'file',
+        icon: icon,
+        language: lang,
+        content: content,
+        fileHandle: fileHandle
+      };
+      
+      loadedCount++;
+      if (loadedCount === fileList.length) {
+        renderExplorer();
+        renderTabs();
+        switchToFile(file.name);
+        showToast(`Imported ${fileList.length} file(s) into workspace.`, 'success');
+      }
+    };
+    reader.readAsText(file);
+  }
+});
+
+// Fallback Folder Import change handler
+document.getElementById('hidden-folder-input').addEventListener('change', (e) => {
+  const fileList = e.target.files;
+  if (fileList.length === 0) return;
+  
+  // Clear files
+  for (let key in files) delete files[key];
+  modifiedFiles.clear();
+  
+  let loadedCount = 0;
+  let fileEntries = Array.from(fileList).filter(file => {
+    return !file.webkitRelativePath.includes('node_modules/') && !file.webkitRelativePath.includes('.git/');
+  });
+  
+  if (fileEntries.length === 0) {
+    showToast("No readable files in imported folder.", "warning");
+    return;
+  }
+  
+  fileEntries.forEach((file, index) => {
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const content = evt.target.result;
+      let ext = file.name.split('.').pop().toLowerCase();
+      let lang = 'javascript';
+      let icon = 'file-code-2';
+      
+      if (ext === 'md') { lang = 'markdown'; icon = 'file-text'; }
+      else if (ext === 'json') { lang = 'json'; icon = 'braces'; }
+      else if (ext === 'css') { lang = 'css'; icon = 'file-type-2'; }
+      else if (ext === 'html') { lang = 'html'; icon = 'file-code'; }
+      
+      const pathKey = file.webkitRelativePath || file.name;
+      files[pathKey] = {
+        name: file.name,
+        path: pathKey,
+        type: 'file',
+        icon: icon,
+        language: lang,
+        content: content
+      };
+      
+      loadedCount++;
+      if (loadedCount === fileEntries.length) {
+        renderExplorer();
+        renderTabs();
+        const firstFile = Object.keys(files)[0];
+        if (firstFile) switchToFile(firstFile);
+        
+        const rootFolder = fileList[0].webkitRelativePath.split('/')[0] || "Imported Folder";
+        document.querySelector('.tree-folder span').textContent = rootFolder;
+        showToast(`Imported folder: ${rootFolder} (${fileEntries.length} files)`, 'success');
+      }
+    };
+    reader.readAsText(file);
+  });
+});
+
+// Create New Folder
+document.getElementById('new-folder-btn').addEventListener('click', async () => {
+  const folderName = prompt("Enter new folder name:");
+  if (!folderName) return;
+  
+  if (rootDirHandle) {
+    try {
+      await rootDirHandle.getDirectoryHandle(folderName, { create: true });
+      showToast(`Created folder "${folderName}" on local disk.`, 'success');
+      refreshWorkspace();
+    } catch(e) {
+      console.error(e);
+      showToast("Failed to create folder on disk", "error");
+    }
+  } else {
+    // virtual simulation
+    showToast(`Created virtual folder "${folderName}"`, 'success');
+  }
+});
+
+// Clone GitHub Repository (Local connected or Sandbox virtual)
+document.getElementById('clone-repo-btn').addEventListener('click', async () => {
+  const repoUrl = prompt("Enter GitHub Repo URL or user/repo (e.g. facebook/react):");
+  if (!repoUrl) return;
+  
+  let repoPath = repoUrl.trim();
+  if (repoPath.startsWith('http')) {
+    const parts = repoPath.split('github.com/');
+    if (parts[1]) repoPath = parts[1];
+  }
+  
+  if (isBackendConnected) {
+    const confirmLocal = confirm("Local Terminal active! Do you want to run 'git clone' on your physical machine? (Canceling will import to sandboxed browser memory instead)");
+    if (confirmLocal) {
+      const cleanPath = repoPath.replace('.git', '');
+      socket.send(JSON.stringify({ type: 'input', data: `git clone https://github.com/${cleanPath}.git\n` }));
+      appendTerminalRaw(`\n[Git] Running clone command in background...\n`);
+      showToast(`Cloning ${cleanPath} to local disk. Once finished, click 'Import Local Folder' to mount!`, "info");
+      return;
+    }
+  }
+  
+  // Clone to in-memory Sandbox
+  await cloneGitHubSandbox(repoPath);
+});
+
+async function cloneGitHubSandbox(repoPath) {
+  const cleanPath = repoPath.replace('.git', '');
+  const parts = cleanPath.split('/');
+  if (parts.length < 2) {
+    showToast("Invalid repository path. Use format: owner/repo", "error");
+    return;
+  }
+  const owner = parts[0];
+  const repo = parts[1];
+  
+  showToast(`Cloning ${owner}/${repo} in sandbox...`, "info");
+  
+  try {
+    const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+    if (!repoRes.ok) throw new Error("Repository not found (might be private or rate limited)");
+    const repoData = await repoRes.json();
+    const defaultBranch = repoData.default_branch || 'main';
     
-    // Clear existing mock files
+    const treeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${defaultBranch}?recursive=1`);
+    if (!treeRes.ok) throw new Error("Failed to fetch repository tree structure");
+    const treeData = await treeRes.json();
+    
+    // Clear files
     for (let key in files) delete files[key];
     modifiedFiles.clear();
+    rootDirHandle = null; // Exit native disk mode
     
-    // Function to recursively read directory
+    const fileEntries = treeData.tree.filter(item => item.type === 'blob');
+    if (fileEntries.length === 0) {
+      showToast("Repository is empty.", "warning");
+      return;
+    }
+    
+    fileEntries.forEach(entry => {
+      let ext = entry.path.split('.').pop().toLowerCase();
+      let lang = 'javascript';
+      let icon = 'file-code-2';
+      
+      if (ext === 'md') { lang = 'markdown'; icon = 'file-text'; }
+      else if (ext === 'json') { lang = 'json'; icon = 'braces'; }
+      else if (ext === 'css') { lang = 'css'; icon = 'file-type-2'; }
+      else if (ext === 'html') { lang = 'html'; icon = 'file-code'; }
+      
+      files[entry.path] = {
+        name: entry.path.split('/').pop(),
+        path: entry.path,
+        type: 'file',
+        icon: icon,
+        language: lang,
+        content: `// Loading ${entry.path} contents from GitHub...`,
+        gitUrl: entry.url,
+        isGitUnloaded: true
+      };
+    });
+    
+    document.querySelector('.tree-folder span').textContent = `${owner}/${repo} [Git Sandbox]`;
+    renderExplorer();
+    renderTabs();
+    
+    let firstFile = Object.keys(files).find(k => k.toLowerCase().endsWith('readme.md')) || Object.keys(files)[0];
+    if (firstFile) {
+      await fetchGitContent(firstFile);
+      switchToFile(firstFile);
+    }
+    showToast(`Cloned ${owner}/${repo} successfully!`, "success");
+    appendTerminalRaw(`\n[GitHub Sandbox] Successfully loaded ${fileEntries.length} files from repository: ${owner}/${repo}.\n`);
+  } catch (err) {
+    console.error(err);
+    showToast(`GitHub Clone failed: ${err.message}`, "error");
+  }
+}
+
+async function fetchGitContent(fileName) {
+  const file = files[fileName];
+  if (!file || !file.isGitUnloaded) return;
+  
+  try {
+    const res = await fetch(file.gitUrl);
+    if (!res.ok) throw new Error("API Limit exceeded or Connection error");
+    const data = await res.json();
+    const content = atob(data.content.replace(/\n/g, ''));
+    file.content = content;
+    file.isGitUnloaded = false;
+  } catch(e) {
+    file.content = `// Error loading file from GitHub: ${e.message}\n// Try again or view other files.`;
+  }
+}
+
+async function refreshWorkspace() {
+  if (rootDirHandle) {
+    // Keep active file edits
+    for (let key in files) {
+      if (files[key].fileHandle && key !== activeFile) {
+        delete files[key];
+      }
+    }
+    
     async function readDir(dirHandle, path = '') {
       for await (const entry of dirHandle.values()) {
         const entryPath = path ? `${path}/${entry.name}` : entry.name;
         if (entry.kind === 'file') {
           try {
+            if (entryPath === activeFile) continue;
             const file = await entry.getFile();
             const content = await file.text();
             let ext = entry.name.split('.').pop().toLowerCase();
@@ -415,35 +745,25 @@ document.getElementById('new-folder-btn').addEventListener('click', async () => 
               fileHandle: entry
             };
           } catch(e) {
-            console.warn("Skipped unreadable file:", entry.name);
+            // skip
           }
         } else if (entry.kind === 'directory') {
-          // Ignore heavy vendor directories
           if (entry.name !== 'node_modules' && entry.name !== '.git') {
             await readDir(entry, entryPath);
           }
         }
       }
     }
-    
-    showToast(`Loading workspace from ${dirHandle.name}...`, 'info');
-    await readDir(dirHandle);
-    
+    await readDir(rootDirHandle);
     renderExplorer();
-    const firstFile = Object.keys(files)[0];
-    if (firstFile) switchToFile(firstFile);
-    
-    document.querySelector('.tree-folder span').textContent = dirHandle.name;
-    updateGitPanel();
-    showToast(`Mounted native workspace: ${dirHandle.name}`, 'success');
-    
-  } catch (err) {
-    if (err.name !== 'AbortError') {
-      console.error(err);
-      showToast("Failed to mount folder", "error");
-    }
+    renderTabs();
+    showToast("Workspace refreshed.", "info");
+  } else {
+    showToast("Refresh: Sandboxed virtual workspace is up to date.", "info");
   }
-});
+}
+
+document.getElementById('refresh-explorer').addEventListener('click', refreshWorkspace);
 
 // 4. Simulated Terminal Controller
 const terminalOutput = document.getElementById('terminal-output');
@@ -1307,6 +1627,96 @@ browserUrlInput.addEventListener('keydown', (e) => {
 browserBtnRefresh.addEventListener('click', () => {
   loadBrowserUrl(browserUrlInput.value);
 });
+
+// Browser Device Sizing Controller
+const deviceSelect = document.getElementById('browser-device-preset');
+const deviceWidthInput = document.getElementById('browser-device-width');
+const deviceHeightInput = document.getElementById('browser-device-height');
+const rotateBtn = document.getElementById('browser-btn-rotate');
+const iframeWrapper = document.getElementById('browser-iframe-wrapper');
+
+function applyDeviceSizing() {
+  if (!iframeWrapper) return;
+  const preset = deviceSelect.value;
+  
+  // Clear styles & classes
+  iframeWrapper.className = '';
+  iframeWrapper.style.width = '';
+  iframeWrapper.style.height = '';
+  iframeWrapper.style.aspectRatio = '';
+
+  if (preset === 'responsive') {
+    iframeWrapper.classList.add('responsive');
+    deviceWidthInput.disabled = true;
+    deviceHeightInput.disabled = true;
+    deviceWidthInput.value = '';
+    deviceHeightInput.value = '';
+    rotateBtn.style.display = 'none';
+  } else if (preset === 'desktop-16-9') {
+    iframeWrapper.classList.add('aspect-ratio-mode');
+    iframeWrapper.style.width = '100%';
+    iframeWrapper.style.maxWidth = '1024px';
+    iframeWrapper.style.aspectRatio = '16 / 9';
+    deviceWidthInput.disabled = true;
+    deviceHeightInput.disabled = true;
+    deviceWidthInput.value = '1024';
+    deviceHeightInput.value = '576';
+    rotateBtn.style.display = 'none';
+  } else if (preset === 'desktop-4-3') {
+    iframeWrapper.classList.add('aspect-ratio-mode');
+    iframeWrapper.style.width = '100%';
+    iframeWrapper.style.maxWidth = '800px';
+    iframeWrapper.style.aspectRatio = '4 / 3';
+    deviceWidthInput.disabled = true;
+    deviceHeightInput.disabled = true;
+    deviceWidthInput.value = '800';
+    deviceHeightInput.value = '600';
+    rotateBtn.style.display = 'none';
+  } else if (preset === 'tablet') {
+    iframeWrapper.classList.add('device-mode');
+    iframeWrapper.style.width = '768px';
+    iframeWrapper.style.height = '1024px';
+    deviceWidthInput.disabled = false;
+    deviceHeightInput.disabled = false;
+    deviceWidthInput.value = '768';
+    deviceHeightInput.value = '1024';
+    rotateBtn.style.display = 'flex';
+  } else if (preset === 'mobile') {
+    iframeWrapper.classList.add('device-mode');
+    iframeWrapper.style.width = '375px';
+    iframeWrapper.style.height = '812px';
+    deviceWidthInput.disabled = false;
+    deviceHeightInput.disabled = false;
+    deviceWidthInput.value = '375';
+    deviceHeightInput.value = '812';
+    rotateBtn.style.display = 'flex';
+  }
+}
+
+if (deviceSelect) {
+  deviceSelect.addEventListener('change', applyDeviceSizing);
+}
+
+function handleManualResize() {
+  if (!iframeWrapper) return;
+  const w = parseInt(deviceWidthInput.value) || 375;
+  const h = parseInt(deviceHeightInput.value) || 812;
+  iframeWrapper.style.width = w + 'px';
+  iframeWrapper.style.height = h + 'px';
+}
+
+if (deviceWidthInput) deviceWidthInput.addEventListener('input', handleManualResize);
+if (deviceHeightInput) deviceHeightInput.addEventListener('input', handleManualResize);
+
+if (rotateBtn) {
+  rotateBtn.addEventListener('click', () => {
+    const w = deviceWidthInput.value;
+    const h = deviceHeightInput.value;
+    deviceWidthInput.value = h;
+    deviceHeightInput.value = w;
+    handleManualResize();
+  });
+}
 
 // God Mode Toggle Event Handling
 const godmodeToggle = document.getElementById('setting-godmode');
